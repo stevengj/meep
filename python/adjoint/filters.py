@@ -6,6 +6,11 @@ import numpy as np
 from autograd import numpy as npa
 import meep as mp
 
+
+'''
+# ------------------------------------------------------------------------------------ #
+Helper functions to be used by other routines
+'''
 def _centered(arr, newshape):
     '''Helper function that reformats the padded array of the fft filter operation.
 
@@ -64,6 +69,11 @@ def _zero_pad(arr, pad):
     
     return out
 
+'''
+# ------------------------------------------------------------------------------------ #
+Parameter filters
+'''
+
 def simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries=[]):
     """A simple 2d filter algorithm that is differentiable with autograd.
     Uses a 2D fft approach since it is typically faster and preserves the shape
@@ -84,7 +94,7 @@ def simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries=[]):
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     symmetries : list
-        Symmetries to impose on the parameter field (either mp.X or mp.Y)
+        Symmetries to impose on the parameter field (either mp.X, mp.Y, or both)
     
     Returns
     -------
@@ -159,7 +169,7 @@ def cylindrical_filter(x,radius,Lx,Ly,resolution,symmetries=[]):
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     symmetries : list
-        Symmetries to impose on the parameter field (either mp.X or mp.Y)
+        Symmetries to impose on the parameter field (either mp.X, mp.Y, or both)
 
     Returns
     -------
@@ -205,7 +215,7 @@ def conic_filter(x,radius,Lx,Ly,resolution,symmetries=[]):
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     symmetries : list
-        Symmetries to impose on the parameter field (either mp.X or mp.Y)
+        Symmetries to impose on the parameter field (either mp.X, mp.Y, or both)
 
     Returns
     -------
@@ -251,6 +261,8 @@ def gaussian_filter(x,sigma,Lx,Ly,resolution,symmetries=[]):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    symmetries : list
+        Symmetries to impose on the parameter field (either mp.X, mp.Y, or both)
 
     Returns
     -------
@@ -285,7 +297,7 @@ def gaussian_filter(x,sigma,Lx,Ly,resolution,symmetries=[]):
 
 '''
 # ------------------------------------------------------------------------------------ #
-Erosion and dilation operators
+Erosion and dilation (morphological) operators
 '''
     
 def exponential_erosion(x,radius,beta,Lx,Ly,resolution):
@@ -860,6 +872,237 @@ def constraint_void(x,c,eta_d,filter_f,threshold_f,resolution):
     I_v = indicator_void(x.reshape(filtered_field.shape),c,filter_f,threshold_f,resolution).flatten()
     return npa.mean(I_v * npa.minimum(eta_d-filtered_field.flatten(),0)**2)
 
+'''
+# ------------------------------------------------------------------------------------ #
+Material interpolators
+'''
+
+def SIMP(x,eps1,eps2,p=1):
+    '''Interpolates the design parameters (0-1) into the desired permittivity contrast (eps1-eps2) [1,2].
+    
+    Parameters
+    ----------
+    x : array_like
+        Filtered and thresholded design parameters (between 0 and 1)
+    eps1 : scalar
+        Permittivity of material 1 (must be less than eps2)
+    eps2 : sca;ar
+        Permittivity of material 2 (must be greater than eps1)
+    p : scalar
+        Penalization factor. Higher numbers encourage binarization. Default is 1; must be >= 1.
+    
+    Returns
+    -------
+    array_like
+        Interpolated design variables
+    
+    References
+    ----------
+
+    [1] Andkjær, J., Johansen, V. E., Friis, K. S., & Sigmund, O. (2014). Inverse design of 
+    nanostructured surfaces for color effects. JOSA B, 31(1), 164-174.
+    [2] Christiansen, R. E., Vester-Petersen, J., Madsen, S. P., & Sigmund, O. (2019). A non-linear 
+    material interpolation for design of metallic nano-particles using topology optimization. Computer 
+    Methods in Applied Mechanics and Engineering, 343, 23-39.
+    '''
+
+    if eps1 >= eps2:
+        raise ValueError("eps0 must be smaller than eps1.")
+    return eps1 + x**p * (eps2-eps1)
+
+def inverse_SIMP(x,eps1,eps2,p=1):
+    '''Inversely interpolates the design parameters (0-1) into the desired permittivity contrast (eps1-eps2) [1,2].
+    
+    Parameters
+    ----------
+    x : array_like
+        Filtered and thresholded design parameters (between 0 and 1)
+    eps1 : scalar
+        Permittivity of material 1 (must be less than eps2)
+    eps2 : sca;ar
+        Permittivity of material 2 (must be greater than eps1)
+    p : scalar
+        Penalization factor. Higher numbers encourage binarization. Default is 1; must be >= 1.
+    
+    Returns
+    -------
+    array_like
+        Interpolated design variables
+    
+    References
+    ----------
+    [1] Wadbro, E., & Engström, C. (2015). Topology and shape optimization of plasmonic nano-antennas. 
+    Computer Methods in Applied Mechanics and Engineering, 293, 155-169.
+    [2] Christiansen, R. E., Vester-Petersen, J., Madsen, S. P., & Sigmund, O. (2019). A non-linear 
+    material interpolation for design of metallic nano-particles using topology optimization. Computer 
+    Methods in Applied Mechanics and Engineering, 343, 23-39.
+    '''
+    if eps1 >= eps2:
+        raise ValueError("eps0 must be smaller than eps1.")
+    return 1 / (1/eps1 + x**p*(1/eps2 - 1/eps1))
+
+def metal_interpolation(x,n1,k1,n2,k2):
+    '''Nonlinearly interpolates the design parameters (0-1) into the desired permittivity contrast (eps1-eps2).
+    Especially useful for opimization of metal structures in dielectric/air environments. It avoids undesirable 
+    zero crossings that may induce simulation instabilities.
+    
+    Parameters
+    ----------
+    x : array_like
+        Filtered and thresholded design parameters (between 0 and 1)
+    n1 : scalar
+        Permittivity of material 1 (must be less than eps2)
+    k1 : sca;ar
+        Permittivity of material 2 (must be greater than eps1)
+    
+    Returns
+    -------
+    array_like
+        Interpolated design variables
+    
+    References
+    ----------
+    [1] Christiansen, R. E., Vester-Petersen, J., Madsen, S. P., & Sigmund, O. (2019). A non-linear 
+    material interpolation for design of metallic nano-particles using topology optimization. Computer 
+    Methods in Applied Mechanics and Engineering, 343, 23-39.
+    [2] Christiansen, R. E., Michon, J., Benzaouia, M., Sigmund, O., & Johnson, S. G. (2020). Inverse 
+    design of nanoparticles for enhanced Raman scattering. Optics Express, 28(4), 4444-4462.
+    '''
+
+    n_bar = n1 + x*(n2-n1)
+    k_bar = k1 + x*(k2-k1)
+    return (n_bar**2 - k_bar**2) - 1j*(2*n_bar*k_bar)
+
+
+def _eval_susceptibility(self,freq):
+    sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+    if self.gamma == 0:
+        return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq) * sigma
+    else:
+        return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq) * sigma
+
+def _eval_susceptibility(self,freq):
+    sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+    if self.gamma == 0:
+        return -self.frequency*self.frequency / (freq*(freq)) * sigma
+    else:
+        return -self.frequency*self.frequency / (freq*(freq + 1j*self.gamma)) * sigma
+
+def _get_eps(eps0, susceptibilities, conductivity, freqs):
+    # Clean the input
+    if np.isscalar(freq):
+        freqs = np.array(freq)[np.newaxis, np.newaxis, np.newaxis]
+    else:
+        freqs = np.squeeze(freq)
+        freqs = freqs[:, np.newaxis, np.newaxis]
+
+    # Initialize with instantaneous dielectric
+    eps = eps0
+
+    # Iterate through susceptibilities
+    for i_sus, sus in enumerate(susceptibilities):
+        epsmu = epsmu + _eval_susceptibility(sus,freqs)
+
+    # Account for conductivity term (only multiply if nonzero to avoid unnecessary complex numbers)
+    if np.count_nonzero(conductivity) > 0:
+        epsmu = (1 + 1j/freqs * conductivity) * epsmu
+
+    # Convert list matrix to 3D numpy array size [freqs,3,3]
+    return np.squeeze(epsmu)
+
+def _medium_interpolation(x,freqs,medium1,medium2):
+    '''
+
+    '''
+    mat = medium_interpolation(x,freqs,medium1,medium2)
+
+def medium_interpolation(x,freqs,medium1,medium2):
+    '''
+    TODO
+    '''
+    # get eps
+    eps1 = medium1.epsilon
+    eps2 = medium2.epsilon
+
+    # get sus
+    sus1 = medium1.E_susceptibilities.copy()
+    sus2 = medium2.E_susceptibilities.copy()
+    
+    # interp the ep0
+    epsilon = eps1 + x * (eps2-eps1)
+
+    omega0 = []
+    
+    # interp the sus cond of medium1
+    sigma1 = x
+    for s in sus1:
+        omega0.append(s.omega0)
+        s.sigma_diag = sigma1*s.sigma_diag
+    
+    # interp the sus cond of medium2
+    sigma2 = 1-x
+    for s in sus2:
+        omega0.append(s.omega0)
+        s.sigma_diag = sigma2*s.sigma_diag
+    
+    # interp the damping term
+    omega0 = np.mean(omega0)
+    conductivity = epsilon * (1-epsilon) * omega0
+
+    # build the final object
+    return mp.Medium(epsilon=epsilon,E_susceptibilities=sus,D_conductivity=conductivity)
+
+'''
+# ------------------------------------------------------------------------------------ #
+Multi-objective optimization tools.
+
+A comprehensive survey of the various MOO methods is found in [1].
+
+[1] Marler, R. T., & Arora, J. S. (2004). Survey of multi-objective optimization methods for 
+engineering. Structural and multidisciplinary optimization, 26(6), 369-395.
+'''
+
+def scale_objective(F,Fmin,Fmax):
+    return (F-Fmin)/(Fmax-Fmin)
+
+def compromise_objective(F,Fmin,Fmax,w,p):
+    '''
+    References
+    ----------
+    [1] Sehlström, A. (2013). Multiobjective topology optimization: Tracing of Pareto-optimal 
+    structures with respect to volume, compliance and fundamental eigenvalue (Master's thesis).
+    '''
+
+    F = npa.array(F)
+    Fmin = npa.array(Fmin)
+    Fmax = npa.array(Fmax)
+    w = npa.array(w)
+    return npa.sum( w * ((F-Fmin)/(Fmax-Fmin)),axis=0) ** (1/p)
+
+def exponential_weighting():
+    return
+
+def weighted_product():
+    return
+
+def physical_programming(x):
+    '''
+    TODO
+    References
+    ----------
+    [1] Messac, A. (1996). Physical programming-effective optimization for computational design. 
+    AIAA journal, 34(1), 149-158.
+    [2] Lin, J., Luo, Z., & Tong, L. (2010). A new multi-objective programming scheme for 
+    topology optimization of compliant mechanisms. Structural and Multidisciplinary Optimization, 
+    40(1-6), 241.
+    '''
+    return x
+
+'''
+# ------------------------------------------------------------------------------------ #
+Misc. tools
+'''
+
 def gray_indicator(x):
     '''Calculates a measure of "grayness" according to [1].
 
@@ -880,7 +1123,5 @@ def gray_indicator(x):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
-    return np.mean(4 * x.flatten()) * (1-x.flatten()) * 100
-
-
+    return npa.mean(4 * x.flatten()) * (1-x.flatten()) * 100
 
