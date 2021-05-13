@@ -260,6 +260,7 @@ void fields_chunk::zero_metal(field_type ft) {
     *(zeroes[ft][i]) = 0.0;
 }
 
+template <class T>
 void fields::find_metals() {
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
@@ -276,8 +277,8 @@ void fields::find_metals() {
               }
             }
         }
-        typedef realnum *realnum_ptr;
-        chunks[i]->zeroes[ft] = new realnum_ptr[chunks[i]->num_zeroes[ft]];
+        typedef T *T_ptr;
+        chunks[i]->zeroes[ft] = new T_ptr[chunks[i]->num_zeroes[ft]];
         size_t num = 0;
         DOCMP FOR_COMPONENTS(c) {
           if (type(c) == ft && chunks[i]->f[c][cmp]) LOOP_OVER_VOL_OWNED(vi, c, n) {
@@ -298,6 +299,7 @@ bool fields_chunk::needs_W_notowned(component c) {
   return false;
 }
 
+template <class T>
 void fields::connect_the_chunks() {
   size_t *nc[NUM_FIELD_TYPES][3][2];
   FOR_FIELD_TYPES(f) {
@@ -416,7 +418,7 @@ void fields::connect_the_chunks() {
     FOR_FIELD_TYPES(ft) {
       for (int j = 0; j < num_chunks; j++) {
         delete[] comm_blocks[ft][j + i * num_chunks];
-        comm_blocks[ft][j + i * num_chunks] = new realnum[comm_size_tot(ft, j + i * num_chunks)];
+        comm_blocks[ft][j + i * num_chunks] = new T[comm_size_tot(ft, j + i * num_chunks)];
       }
     }
   } // loop over i chunks
@@ -553,16 +555,17 @@ void fields::connect_the_chunks() {
   delete[] B_redundant;
 }
 
+template <class T>
 void fields_chunk::alloc_extra_connections(field_type f, connect_phase ip, in_or_out io,
                                            size_t num) {
   if (num == 0) return; // No need to go to any bother...
   const size_t tot = num_connections[f][ip][io] + num;
   if (io == Incoming && ip == CONNECT_PHASE) {
     delete[] connection_phases[f];
-    connection_phases[f] = new complex<realnum>[tot];
+    connection_phases[f] = new complex<T>[tot];
   }
-  typedef realnum *realnum_ptr;
-  realnum **conn = new realnum_ptr[tot];
+  typedef T *T_ptr;
+  T **conn = new T_ptr[tot];
   if (!conn) abort("Out of memory!\n");
   delete[] connections[f][ip][io];
   connections[f][ip][io] = conn;

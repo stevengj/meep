@@ -65,7 +65,8 @@ extern "C" int feenableexcept(int EXCEPTS);
 
 #define UNUSED(x) (void)x // silence compiler warnings
 
-#define MPI_REALNUM (sizeof(realnum) == sizeof(double) ? MPI_DOUBLE : MPI_FLOAT)
+template <class T>
+#define MPI_T (sizeof(T) == sizeof(double) ? MPI_DOUBLE : MPI_FLOAT)
 
 using namespace std;
 
@@ -550,10 +551,10 @@ void fields::boundary_communications(field_type ft) {
         if (comm_size > 2147483647) // MPI uses int for size to send/recv
           abort("communications size too big for MPI");
         if (chunks[j]->is_mine() && !chunks[i]->is_mine())
-          MPI_Isend(comm_blocks[ft][pair], (int)comm_size, MPI_REALNUM, chunks[i]->n_proc(),
+          MPI_Isend(comm_blocks[ft][pair], (int)comm_size, MPI_T, chunks[i]->n_proc(),
                     tagto[chunks[i]->n_proc()]++, mycomm, &reqs[reqnum++]);
         if (chunks[i]->is_mine() && !chunks[j]->is_mine())
-          MPI_Irecv(comm_blocks[ft][pair], (int)comm_size, MPI_REALNUM, chunks[j]->n_proc(),
+          MPI_Irecv(comm_blocks[ft][pair], (int)comm_size, MPI_T, chunks[j]->n_proc(),
                     tagto[chunks[j]->n_proc()]++, mycomm, &reqs[reqnum++]);
       }
     }

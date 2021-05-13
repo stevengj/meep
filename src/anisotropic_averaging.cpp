@@ -188,6 +188,7 @@ done : {
 }
 }
 
+template <class T>
 void structure_chunk::set_chi1inv(component c, material_function &medium,
                                   bool use_anisotropic_averaging, double tol, int maxeval) {
   if (!is_mine() || !gv.has_field(c)) return;
@@ -212,7 +213,7 @@ breakout:
 
   FOR_FT_COMPONENTS(ft, c2) if (gv.has_field(c2)) {
     direction d = component_direction(c2);
-    if (!chi1inv[c][d]) chi1inv[c][d] = new realnum[gv.ntot()];
+    if (!chi1inv[c][d]) chi1inv[c][d] = new T[gv.ntot()];
     if (!chi1inv[c][d]) abort("Memory allocation error.\n");
   }
   direction dc = component_direction(c);
@@ -274,6 +275,7 @@ breakout:
   medium.unset_volume();
 }
 
+template <class T>
 void structure_chunk::add_susceptibility(material_function &sigma, field_type ft,
                                          const susceptibility &sus) {
   if (ft != E_stuff && ft != H_stuff) abort("susceptibilities must be for E or H fields");
@@ -294,7 +296,7 @@ void structure_chunk::add_susceptibility(material_function &sigma, field_type ft
   if (is_mine()) FOR_FT_COMPONENTS(ft, c) if (gv.has_field(c)) {
       FOR_FT_COMPONENTS(ft, c2) if (gv.has_field(c2)) {
         direction d = component_direction(c2);
-        if (!newsus->sigma[c][d]) newsus->sigma[c][d] = new realnum[gv.ntot()];
+        if (!newsus->sigma[c][d]) newsus->sigma[c][d] = new T[gv.ntot()];
         if (!newsus->sigma[c][d]) abort("Memory allocation error.\n");
       }
       bool trivial[3] = {true, true, true};
@@ -305,9 +307,9 @@ void structure_chunk::add_susceptibility(material_function &sigma, field_type ft
         d1 = P;
       }
       int idiag = component_index(c);
-      realnum *s0 = newsus->sigma[c][d0];
-      realnum *s1 = newsus->sigma[c][d1];
-      realnum *s2 = newsus->sigma[c][d2];
+      T *s0 = newsus->sigma[c][d0];
+      T *s1 = newsus->sigma[c][d1];
+      T *s2 = newsus->sigma[c][d2];
       vec shift1(gv[unit_ivec(gv.dim, component_direction(c)) * (ft == E_stuff ? 1 : -1)]);
       LOOP_OVER_VOL(gv, c, i) {
         double sigrow[3], sigrow_offdiag[3];

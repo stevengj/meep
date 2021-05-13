@@ -68,6 +68,7 @@ double pml_quadratic_profile(double, void *);
 
 /* generic base class, only used by subclassing: represents susceptibility
    polarizability vector P = chi(omega) W  (where W = E or H). */
+template<class T>
 class susceptibility {
 public:
   susceptibility() {
@@ -98,12 +99,12 @@ public:
   bool operator==(const susceptibility &s) const { return id == s.id; };
 
   // Returns the 1st order nonlinear susceptibility (generic)
-  virtual std::complex<realnum> chi1(realnum freq, realnum sigma = 1);
+  virtual std::complex<T> chi1(T freq, T sigma = 1);
 
   // update all of the internal polarization state given the W field
   // at the current time step, possibly the previous field W_prev, etc.
-  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
+  virtual void update_P(T *W[NUM_FIELD_COMPONENTS][2],
+                        T *W_prev[NUM_FIELD_COMPONENTS][2], T dt, const grid_volume &gv,
                         void *P_internal_data) const {
     (void)P;
     (void)W;
@@ -116,7 +117,7 @@ public:
   // subtract all of the internal polarizations from the given f_minus_p
   // field.  Also given the fields array if it is needed for some reason.
   // Only update for ft fields.
-  virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
+  virtual void subtract_P(field_type ft, T *f_minus_p[NUM_FIELD_COMPONENTS][2],
                           void *P_internal_data) const {
     (void)ft;
     (void)f_minus_p;
@@ -124,29 +125,29 @@ public:
   }
 
   // whether, for the given field W, Meep needs to allocate P[c]
-  virtual bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
+  virtual bool needs_P(component c, int cmp, T *W[NUM_FIELD_COMPONENTS][2]) const;
 
   // whether update_P will need the notowned part of W for this c
   // (which means that Meep will need to communicate it between chunks)
-  virtual bool needs_W_notowned(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
+  virtual bool needs_W_notowned(component c, T *W[NUM_FIELD_COMPONENTS][2]) const;
 
   // whether update_P needs the W_prev field (from the previous timestep)
   virtual bool needs_W_prev() const { return false; }
 
   /* A susceptibility may be associated with any amount of internal
-     data need to update the polarization field.  This includes the
+     data needed to update the polarization field.  This includes the
      polarization field(s) itself.  It may also, for example, store
      the polarization field from previous timesteps, atomic-level
      populations, or other data.  These routines return the size of
      this internal-data array and initialize it. */
-  virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
+  virtual void *new_internal_data(T *W[NUM_FIELD_COMPONENTS][2],
                                   const grid_volume &gv) const {
     (void)W;
     (void)gv;
     return 0;
   }
   virtual void delete_internal_data(void *data) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
+  virtual void init_internal_data(T *W[NUM_FIELD_COMPONENTS][2], T dt,
                                   const grid_volume &gv, void *data) const {
     (void)W;
     (void)dt;
@@ -174,8 +175,8 @@ public:
   /* the offset into the internal data of the n'th Yee-grid point in
      the c Yee grid for the inotowned internal field, where
      0 <= inotowned < size_internal_notowned_needed. */
-  virtual realnum *internal_notowned_ptr(int inotowned, component c, int n,
-                                         void *P_internal_data) const {
+  virtual T *internal_notowned_ptr(int inotowned, component c, int n,
+                                   void *P_internal_data) const {
     (void)inotowned;
     (void)n;
     (void)c;
@@ -193,8 +194,8 @@ public:
     return 0;
   }
   // real/imaginary parts offsets for cmp = 0/1
-  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, int n,
-                                          void *P_internal_data) const {
+  virtual T *cinternal_notowned_ptr(int inotowned, component c, int cmp, int n,
+                                    void *P_internal_data) const {
     (void)inotowned;
     (void)n;
     (void)c;
@@ -211,9 +212,9 @@ public:
   // This should only be used when dumping and loading susceptibility data to hdf5
   void set_id(int new_id) { id = new_id; };
 
-  susceptibility *next;
+  susceptibility<T> *next;
   size_t ntot;
-  realnum *sigma[NUM_FIELD_COMPONENTS][5];
+  T *sigma[NUM_FIELD_COMPONENTS][5];
 
   /* trivial_sigma[c][d] is true only if *none* of the processes has a
      nontrivial sigma (c,d) component.  This differs, from sigma,
@@ -233,101 +234,104 @@ private:
    \chi(\omega) = sigma * omega_0^2 / (\omega_0^2 - \omega^2 - i\gamma \omega)
   If no_omega_0_denominator is true, then we omit the omega_0^2 factor in the
   denominator to obtain a Drude model. */
-class lorentzian_susceptibility : public susceptibility {
+template<class T>
+class lorentzian_susceptibility : public susceptibility<T> {
 public:
-  lorentzian_susceptibility(realnum omega_0, realnum gamma, bool no_omega_0_denominator = false)
+  lorentzian_susceptibility(T omega_0, T gamma, bool no_omega_0_denominator = false)
       : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
-  virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
+  virtual susceptibility<T> *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
 
   // Returns the 1st order nonlinear susceptibility
-  virtual std::complex<realnum> chi1(realnum freq, realnum sigma = 1);
+  virtual std::complex<T> chi1(T freq, T sigma = 1);
 
-  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
+  virtual void update_P(T *W[NUM_FIELD_COMPONENTS][2],
+                        T *W_prev[NUM_FIELD_COMPONENTS][2], T dt, const grid_volume &gv,
                         void *P_internal_data) const;
 
-  virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
+  virtual void subtract_P(field_type ft, T *f_minus_p[NUM_FIELD_COMPONENTS][2],
                           void *P_internal_data) const;
 
-  virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
+  virtual void *new_internal_data(T *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
+  virtual void init_internal_data(T *W[NUM_FIELD_COMPONENTS][2], T dt,
                                   const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
 
   virtual int num_cinternal_notowned_needed(component c, void *P_internal_data) const;
-  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, int n,
-                                          void *P_internal_data) const;
+  virtual T *cinternal_notowned_ptr(int inotowned, component c, int cmp, int n,
+                                    void *P_internal_data) const;
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 4; }
 
 protected:
-  realnum omega_0, gamma;
+  T omega_0, gamma;
   bool no_omega_0_denominator;
 };
 
 /* like a Lorentzian susceptibility, but the polarization equation
    includes white noise with a specified amplitude */
-class noisy_lorentzian_susceptibility : public lorentzian_susceptibility {
+template<class T>
+class noisy_lorentzian_susceptibility : public lorentzian_susceptibility<T> {
 public:
-  noisy_lorentzian_susceptibility(realnum noise_amp, realnum omega_0, realnum gamma,
+  noisy_lorentzian_susceptibility(T noise_amp, T omega_0, T gamma,
                                   bool no_omega_0_denominator = false)
-      : lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator), noise_amp(noise_amp) {}
+    : lorentzian_susceptibility<T>::lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator), noise_amp(noise_amp) {}
 
-  virtual susceptibility *clone() const { return new noisy_lorentzian_susceptibility(*this); }
+  virtual susceptibility<T> *clone() const { return new noisy_lorentzian_susceptibility(*this); }
 
-  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
+  virtual void update_P(T *W[NUM_FIELD_COMPONENTS][2],
+                        T *W_prev[NUM_FIELD_COMPONENTS][2], T dt, const grid_volume &gv,
                         void *P_internal_data) const;
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 5; }
 
 protected:
-  realnum noise_amp;
+  T noise_amp;
 };
 
 typedef enum { GYROTROPIC_LORENTZIAN, GYROTROPIC_DRUDE, GYROTROPIC_SATURATED } gyrotropy_model;
 
 /* gyrotropic susceptibility */
-class gyrotropic_susceptibility : public susceptibility {
+template<class T>
+class gyrotropic_susceptibility : public susceptibility<T> {
 public:
-  gyrotropic_susceptibility(const vec &bias, realnum omega_0, realnum gamma, realnum alpha = 0.0,
+  gyrotropic_susceptibility(const vec &bias, T omega_0, T gamma, T alpha = 0.0,
                             gyrotropy_model model = GYROTROPIC_LORENTZIAN);
-  virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
+  virtual susceptibility<T> *clone() const { return new gyrotropic_susceptibility(*this); }
 
-  virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
+  virtual void *new_internal_data(T *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
+  virtual void init_internal_data(T *W[NUM_FIELD_COMPONENTS][2], T dt,
                                   const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
 
-  virtual bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
-  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
+  virtual bool needs_P(component c, int cmp, T *W[NUM_FIELD_COMPONENTS][2]) const;
+  virtual void update_P(T *W[NUM_FIELD_COMPONENTS][2],
+                        T *W_prev[NUM_FIELD_COMPONENTS][2], T dt, const grid_volume &gv,
                         void *P_internal_data) const;
-  virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
+  virtual void subtract_P(field_type ft, T *f_minus_p[NUM_FIELD_COMPONENTS][2],
                           void *P_internal_data) const;
 
   virtual int num_cinternal_notowned_needed(component c, void *P_internal_data) const;
-  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, int n,
-                                          void *P_internal_data) const;
+  virtual T *cinternal_notowned_ptr(int inotowned, component c, int cmp, int n,
+                                    void *P_internal_data) const;
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 8; }
-  virtual bool needs_W_notowned(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
+  virtual bool needs_W_notowned(component c, T *W[NUM_FIELD_COMPONENTS][2]) const {
     (void)c;
     (void)W;
     return true;
   }
 
 protected:
-  realnum gyro_tensor[3][3];
-  realnum omega_0, gamma, alpha;
+  T gyro_tensor[3][3];
+  T omega_0, gamma, alpha;
   gyrotropy_model model;
 };
 
-class multilevel_susceptibility : public susceptibility {
+class multilevel_susceptibility : public susceptibility<double> {
 public:
   multilevel_susceptibility() : L(0), T(0), Gamma(0), N0(0), alpha(0), omega(0), gamma(0) {}
   multilevel_susceptibility(int L, int T, const realnum *Gamma, const realnum *N0,
@@ -563,22 +567,24 @@ public:
   }
 };
 
+template<class T>
 class structure;
 
+template<class T>
 class structure_chunk {
 public:
   double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
-  realnum *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
-  realnum *chi1inv[NUM_FIELD_COMPONENTS][5];
+  T *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
+  T *chi1inv[NUM_FIELD_COMPONENTS][5];
   bool trivial_chi1inv[NUM_FIELD_COMPONENTS][5];
-  realnum *conductivity[NUM_FIELD_COMPONENTS][5];
-  realnum *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
-  bool condinv_stale;                        // true if condinv needs to be recomputed
-  realnum *sig[6], *kap[6], *siginv[6];      // conductivity array for uPML
-  int sigsize[6];                            // conductivity array size
+  T *conductivity[NUM_FIELD_COMPONENTS][5];
+  T *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
+  bool condinv_stale;                  // true if condinv needs to be recomputed
+  T *sig[6], *kap[6], *siginv[6];      // conductivity array for uPML
+  int sigsize[6];                      // conductivity array size
   grid_volume gv; // integer grid_volume that could be bigger than non-overlapping v below
   volume v;
-  susceptibility *chiP[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
+  susceptibility<T> *chiP[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
   double
       cost; // The cost of this chunk's grid_volume as computed by split_by_cost and fragment_stats
 
@@ -600,9 +606,9 @@ public:
                pml_profile_func pml_profile, void *pml_profile_data, double pml_profile_integral,
                double pml_profile_integral_u);
 
-  void add_susceptibility(material_function &sigma, field_type ft, const susceptibility &sus);
+  void add_susceptibility(material_function &sigma, field_type ft, const susceptibility<T> &sus);
 
-  void mix_with(const structure_chunk *, double);
+  void mix_with(const structure_chunk<T> *, double);
 
   int n_proc() const { return the_proc; } // Says which proc owns me!
   int is_mine() const { return the_is_mine; }
@@ -626,6 +632,7 @@ private:
 };
 
 // linked list of descriptors for boundary regions (currently just for PML)
+template<class T>
 class boundary_region {
 public:
   typedef enum { NOTHING_SPECIAL, PML } boundary_region_kind;
@@ -686,8 +693,8 @@ public:
     return r;
   }
 
-  void apply(structure *s) const;
-  void apply(const structure *s, structure_chunk *sc) const;
+  void apply(structure<T> *s) const;
+  void apply(const structure<T> *s, structure_chunk<T> *sc) const;
   bool check_ok(const grid_volume &gv) const;
 
 private:
@@ -701,18 +708,22 @@ private:
   boundary_region *next;
 };
 
-boundary_region pml(double thickness, direction d, boundary_side side, double Rasymptotic = 1e-15,
-                    double mean_stretch = 1.0);
-boundary_region pml(double thickness, direction d, double Rasymptotic = 1e-15,
-                    double mean_stretch = 1.0);
-boundary_region pml(double thickness, double Rasymptotic = 1e-15, double mean_stretch = 1.0);
+template<class T>
+boundary_region<T> pml(double thickness, direction d, boundary_side side, double Rasymptotic = 1e-15,
+                       double mean_stretch = 1.0);
+template<class T>
+boundary_region<T> pml(double thickness, direction d, double Rasymptotic = 1e-15,
+                       double mean_stretch = 1.0);
+template<class T>
+boundary_region<T> pml(double thickness, double Rasymptotic = 1e-15, double mean_stretch = 1.0);
 #define no_pml() boundary_region()
 
 class binary_partition;
 
+template<class T>
 class structure {
 public:
-  structure_chunk **chunks;
+  structure_chunk<T> **chunks;
   int num_chunks;
   bool shared_chunks; // whether modifications to chunks will be visible to fields objects
   grid_volume gv, user_volume;
@@ -727,15 +738,15 @@ public:
   ~structure();
   structure();
   structure(const grid_volume &gv, material_function &eps,
-            const boundary_region &br = boundary_region(), const symmetry &s = meep::identity(),
+            const boundary_region<T> &br = boundary_region<T>(), const symmetry &s = meep::identity(),
             int num_chunks = 0, double Courant = 0.5, bool use_anisotropic_averaging = false,
             double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL);
   structure(const grid_volume &gv, double eps(const vec &),
-            const boundary_region &br = boundary_region(), const symmetry &s = meep::identity(),
+            const boundary_region<T> &br = boundary_region<T>(), const symmetry &s = meep::identity(),
             int num_chunks = 0, double Courant = 0.5, bool use_anisotropic_averaging = false,
             double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL);
-  structure(const structure *);
-  structure(const structure &);
+  structure(const structure<T> *);
+  structure(const structure<T> &);
 
   void set_materials(material_function &mat, bool use_anisotropic_averaging = true,
                      double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL);
@@ -759,14 +770,14 @@ public:
   void set_chi2(material_function &eps);
   void set_chi2(double eps(const vec &));
 
-  void add_susceptibility(double sigma(const vec &), field_type c, const susceptibility &sus);
-  void add_susceptibility(material_function &sigma, field_type c, const susceptibility &sus);
+  void add_susceptibility(double sigma(const vec &), field_type c, const susceptibility<T> &sus);
+  void add_susceptibility(material_function &sigma, field_type c, const susceptibility<T> &sus);
   void remove_susceptibilities();
 
   void set_output_directory(const char *name);
   void mix_with(const structure *, double);
 
-  bool equal_layout(const structure &) const;
+  bool equal_layout(const structure<T> &) const;
   void print_layout(void) const;
   std::vector<grid_volume> get_chunk_volumes() const;
   std::vector<int> get_chunk_owners() const;
@@ -775,11 +786,11 @@ public:
   void dump(const char *filename);
   void dump_chunk_layout(const char *filename);
   void load(const char *filename);
-  void load_chunk_layout(const char *filename, boundary_region &br);
-  void load_chunk_layout(const binary_partition *bp, boundary_region &br);
+  void load_chunk_layout(const char *filename, boundary_region<T> &br);
+  void load_chunk_layout(const binary_partition *bp, boundary_region<T> &br);
   void load_chunk_layout(const std::vector<grid_volume> &gvs,
                          const std::vector<int> &ids,
-                         boundary_region &br);
+                         boundary_region<T> &br);
 
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const ivec &origloc, double frequency = 0,
@@ -799,12 +810,12 @@ public:
   double max_eps() const;
   double estimated_cost(int process = my_rank());
 
-  friend class boundary_region;
+  friend class boundary_region<T>;
 
 private:
   void use_pml(direction d, boundary_side b, double dx);
   void add_to_effort_volumes(const grid_volume &new_effort_volume, double extra_effort);
-  void choose_chunkdivision(const grid_volume &gv, int num_chunks, const boundary_region &br,
+  void choose_chunkdivision(const grid_volume &gv, int num_chunks, const boundary_region<T> &br,
                             const symmetry &s);
   void check_chunks();
   void changing_chunks();
@@ -820,8 +831,11 @@ std::vector<grid_volume> choose_chunkdivision(grid_volume &gv,
                                               const symmetry &s);
 
 class src_vol;
+template<class T>
 class fields;
+template<class T>
 class fields_chunk;
+template<class T>
 class flux_vol;
 
 // Time-dependence of a current source, intended to be overridden by
@@ -1003,9 +1017,10 @@ public:
 
 // dft.cpp
 // this should normally only be created with fields::add_dft
+template<class T>
 class dft_chunk {
 public:
-  dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, vec e0_, vec e1_, double dV0_,
+  dft_chunk(fields_chunk<T> *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, vec e0_, vec e1_, double dV0_,
             double dV1_, component c_, bool use_centered_grid, std::complex<double> phase_factor,
             ivec shift_, const symmetry &S_, int sn_, const void *data_);
   ~dft_chunk();
@@ -1021,7 +1036,7 @@ public:
                                              double *buffer, int reim,
                                              std::complex<double> *field_array, void *mode1_data,
                                              void *mode2_data, int ic_conjugate,
-                                             bool retain_interp_weights, fields *parent);
+                                             bool retain_interp_weights, fields<T> *parent);
 
   void operator-=(const dft_chunk &chunk);
 
@@ -1071,7 +1086,7 @@ public:
   std::complex<double> extra_weight;
 
   // parameters passed from field_integrate:
-  fields_chunk *fc;
+  fields_chunk<T> *fc;
   ivec is, ie;
   vec s0, s1, e0, e1;
   double dV0, dV1;
@@ -1089,21 +1104,26 @@ public:
   int vc; // component descriptor from the original volume
 };
 
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0);
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0);
-void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0);
-void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0);
+template<class T>
+void save_dft_hdf5(dft_chunk<T> *dft_chunks, component c, h5file *file, const char *dprefix = 0);
+template<class T>
+void load_dft_hdf5(dft_chunk<T> *dft_chunks, component c, h5file *file, const char *dprefix = 0);
+template<class T>
+void save_dft_hdf5(dft_chunk<T> *dft_chunks, const char *name, h5file *file, const char *dprefix = 0);
+template<class T>
+void load_dft_hdf5(dft_chunk<T> *dft_chunks, const char *name, h5file *file, const char *dprefix = 0);
 
 // dft.cpp (normally created with fields::add_dft_flux)
+template<class T>
 class dft_flux {
 public:
-  dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_, double fmin,
+  dft_flux(const component cE_, const component cH_, dft_chunk<T> *E_, dft_chunk<T> *H_, double fmin,
            double fmax, int Nf, const volume &where_, direction normal_direction_,
            bool use_symmetry_);
-  dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_,
+  dft_flux(const component cE_, const component cH_, dft_chunk<T> *E_, dft_chunk<T> *H_,
            const std::vector<double> freq_, const volume &where_, direction normal_direction_,
            bool use_symmetry_);
-  dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_,
+  dft_flux(const component cE_, const component cH_, dft_chunk<T> *E_, dft_chunk<T> *H_,
            const double *freq_, size_t Nfreq, const volume &where_, direction normal_direction_,
            bool use_symmetry_);
   dft_flux(const dft_flux &f);
@@ -1113,20 +1133,20 @@ public:
   void save_hdf5(h5file *file, const char *dprefix = 0);
   void load_hdf5(h5file *file, const char *dprefix = 0);
 
-  void operator-=(const dft_flux &fl) {
+  void operator-=(const dft_flux<T> &fl) {
     if (E && fl.E) *E -= *fl.E;
     if (H && fl.H) *H -= *fl.H;
   }
 
-  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
-  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+  void save_hdf5(fields<T> &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+  void load_hdf5(fields<T> &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
 
   void scale_dfts(std::complex<double> scale);
 
   void remove();
 
   std::vector<double> freq;
-  dft_chunk *E, *H;
+  dft_chunk<T> *E, *H;
   component cE, cH;
   volume where;
   direction normal_direction;
@@ -1134,13 +1154,14 @@ public:
 };
 
 // dft.cpp (normally created with fields::add_dft_energy)
+template<class T>
 class dft_energy {
 public:
-  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double freq_min,
+  dft_energy(dft_chunk<T> *E_, dft_chunk<T> *H_, dft_chunk<T> *D_, dft_chunk<T> *B_, double freq_min,
              double freq_max, int Nf, const volume &where_);
-  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_,
+  dft_energy(dft_chunk<T> *E_, dft_chunk<T> *H_, dft_chunk<T> *D_, dft_chunk<T> *B_,
              const std::vector<double> freq_, const volume &where_);
-  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, const double *freq_,
+  dft_energy(dft_chunk<T> *E_, dft_chunk<T> *H_, dft_chunk<T> *D_, dft_chunk<T> *B_, const double *freq_,
              size_t Nfreq, const volume &where_);
   dft_energy(const dft_energy &f);
 
@@ -1158,26 +1179,27 @@ public:
     if (B && fl.B) *B -= *fl.B;
   }
 
-  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
-  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+  void save_hdf5(fields<T> &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+  void load_hdf5(fields<T> &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
 
   void scale_dfts(std::complex<double> scale);
 
   void remove();
 
   std::vector<double> freq;
-  dft_chunk *E, *H, *D, *B;
+  dft_chunk<T> *E, *H, *D, *B;
   volume where;
 };
 
 // stress.cpp (normally created with fields::add_dft_force)
+template<class T>
 class dft_force {
 public:
-  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double fmin, double fmax,
+  dft_force(dft_chunk<T> *offdiag1_, dft_chunk<T> *offdiag2_, dft_chunk<T> *diag_, double fmin, double fmax,
             int Nf, const volume &where_);
-  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
+  dft_force(dft_chunk<T> *offdiag1_, dft_chunk<T> *offdiag2_, dft_chunk<T> *diag_,
             const std::vector<double> freq_, const volume &where_);
-  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, const double *freq_,
+  dft_force(dft_chunk<T> *offdiag1_, dft_chunk<T> *offdiag2_, dft_chunk<T> *diag_, const double *freq_,
             size_t Nfreq, const volume &where_);
   dft_force(const dft_force &f);
 
@@ -1188,15 +1210,15 @@ public:
 
   void operator-=(const dft_force &fl);
 
-  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
-  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+  void save_hdf5(fields<T> &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+  void load_hdf5(fields<T> &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
 
   void scale_dfts(std::complex<double> scale);
 
   void remove();
 
   std::vector<double> freq;
-  dft_chunk *offdiag1, *offdiag2, *diag;
+  dft_chunk<T> *offdiag1, *offdiag2, *diag;
   volume where;
 };
 
@@ -1210,17 +1232,18 @@ struct sourcedata {
 
 
 // near2far.cpp (normally created with fields::add_dft_near2far)
+template<class T>
 class dft_near2far {
 public:
   /* fourier tranforms of tangential E and H field components in a
      medium with the given scalar eps and mu */
-  dft_near2far(dft_chunk *F, double fmin, double fmax, int Nf, double eps, double mu,
+  dft_near2far(dft_chunk<T> *F, double fmin, double fmax, int Nf, double eps, double mu,
                const volume &where_, const direction periodic_d_[2], const int periodic_n_[2],
                const double periodic_k_[2], const double period_[2]);
-  dft_near2far(dft_chunk *F, const std::vector<double> freq_, double eps, double mu,
+  dft_near2far(dft_chunk<T> *F, const std::vector<double> freq_, double eps, double mu,
                const volume &where_, const direction periodic_d_[2], const int periodic_n_[2],
                const double periodic_k_[2], const double period_[2]);
-  dft_near2far(dft_chunk *F, const double *freq_, size_t Nfreq, double eps, double mu,
+  dft_near2far(dft_chunk<T> *F, const double *freq_, size_t Nfreq, double eps, double mu,
                const volume &where_, const direction periodic_d_[2], const int periodic_n_[2],
                const double periodic_k_[2], const double period_[2]);
   dft_near2far(const dft_near2far &f);
@@ -1250,15 +1273,15 @@ public:
 
   void operator-=(const dft_near2far &fl);
 
-  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
-  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+  void save_hdf5(fields<T> &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+  void load_hdf5(fields<T> &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
 
   void scale_dfts(std::complex<double> scale);
 
   void remove();
 
   std::vector<double> freq;
-  dft_chunk *F;
+  dft_chunk<T> *F;
   double eps, mu;
   volume where;
   direction periodic_d[2];
@@ -1274,6 +1297,7 @@ public:
    simplifies things because then we can do the spatial integral of E*J
    *first* and then do the Fourier transform, eliminating the need to
    store the Fourier transform per point or per current. */
+template<class T>
 class dft_ldos {
 public:
   dft_ldos(double freq_min, double freq_max, int Nfreq);
@@ -1284,7 +1308,7 @@ public:
     delete[] Jdft;
   }
 
-  void update(fields &f);          // to be called after each timestep
+  void update(fields<T> &f);       // to be called after each timestep
   double *ldos() const;            // returns array of Nomega values (after last timestep)
   std::complex<double> *F() const; // returns Fdft
   std::complex<double> *J() const; // returns Jdft
@@ -1297,18 +1321,19 @@ private:
 };
 
 // dft.cpp (normally created with fields::add_dft_fields)
+template<class T>
 class dft_fields {
 public:
-  dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq, const volume &where);
-  dft_fields(dft_chunk *chunks, const std::vector<double> freq_, const volume &where);
-  dft_fields(dft_chunk *chunks, const double *freq_, size_t Nfreq, const volume &where);
+  dft_fields(dft_chunk<T> *chunks, double freq_min, double freq_max, int Nfreq, const volume &where);
+  dft_fields(dft_chunk<T> *chunks, const std::vector<double> freq_, const volume &where);
+  dft_fields(dft_chunk<T> *chunks, const double *freq_, size_t Nfreq, const volume &where);
 
   void scale_dfts(std::complex<double> scale);
 
   void remove();
 
   std::vector<double> freq;
-  dft_chunk *chunks;
+  dft_chunk<T> *chunks;
   volume where;
 };
 
@@ -1318,44 +1343,45 @@ enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE = 1, CONNECT_COPY = 2 };
 // data for each susceptibility
 typedef struct polarization_state_s {
   void *data; // internal polarization data for the susceptibility
-  const susceptibility *s;
+  const susceptibility<realnum> *s;
   struct polarization_state_s *next; // linked list
 } polarization_state;
 
+template<class T>
 class fields_chunk {
 public:
-  realnum *f[NUM_FIELD_COMPONENTS][2]; // fields at current time
+  T *f[NUM_FIELD_COMPONENTS][2]; // fields at current time
 
   // auxiliary fields needed for PML (at least in some components)
-  realnum *f_u[NUM_FIELD_COMPONENTS][2];    // integrated from D/B
-  realnum *f_w[NUM_FIELD_COMPONENTS][2];    // E/H integrated from these
-  realnum *f_cond[NUM_FIELD_COMPONENTS][2]; // aux field for PML+conductivity
+  T *f_u[NUM_FIELD_COMPONENTS][2];    // integrated from D/B
+  T *f_w[NUM_FIELD_COMPONENTS][2];    // E/H integrated from these
+  T *f_cond[NUM_FIELD_COMPONENTS][2]; // aux field for PML+conductivity
 
   /* sometimes, to synchronize the E and H fields, e.g. for computing
      flux at a given time, we need to timestep H by 1/2; in this case
      we save backup copies of (some of) the fields to resume timestepping */
-  realnum *f_backup[NUM_FIELD_COMPONENTS][2];
-  realnum *f_u_backup[NUM_FIELD_COMPONENTS][2];
-  realnum *f_w_backup[NUM_FIELD_COMPONENTS][2];
-  realnum *f_cond_backup[NUM_FIELD_COMPONENTS][2];
+  T *f_backup[NUM_FIELD_COMPONENTS][2];
+  T *f_u_backup[NUM_FIELD_COMPONENTS][2];
+  T *f_w_backup[NUM_FIELD_COMPONENTS][2];
+  T *f_cond_backup[NUM_FIELD_COMPONENTS][2];
 
   // W (or E/H) field from prev. timestep, only stored if needed by update_pols
-  realnum *f_w_prev[NUM_FIELD_COMPONENTS][2];
+  T *f_w_prev[NUM_FIELD_COMPONENTS][2];
 
   // used to store D-P and B-P, e.g. when P implements dispersive media
-  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2];
+  T *f_minus_p[NUM_FIELD_COMPONENTS][2];
 
-  realnum *f_rderiv_int; // cache of helper field for 1/r d(rf)/dr derivative
+  T *f_rderiv_int; // cache of helper field for 1/r d(rf)/dr derivative
 
-  dft_chunk *dft_chunks;
+  dft_chunk<T> *dft_chunks;
 
-  realnum **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
+  T **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
   size_t num_zeroes[NUM_FIELD_TYPES];
-  realnum **connections[NUM_FIELD_TYPES][CONNECT_COPY + 1][Outgoing + 1];
+  T **connections[NUM_FIELD_TYPES][CONNECT_COPY + 1][Outgoing + 1];
   size_t num_connections[NUM_FIELD_TYPES][CONNECT_COPY + 1][Outgoing + 1];
-  std::complex<realnum> *connection_phases[NUM_FIELD_TYPES];
+  std::complex<T> *connection_phases[NUM_FIELD_TYPES];
 
-  int npol[NUM_FIELD_TYPES];                // only E_stuff and H_stuff are used
+  int npol[NUM_FIELD_TYPES];                   // only E_stuff and H_stuff are used
   polarization_state *pol[NUM_FIELD_TYPES]; // array of npol[i] polarization_state structures
 
   double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
@@ -1366,15 +1392,15 @@ public:
   double beta;
   int is_real;
   src_vol *sources[NUM_FIELD_TYPES];
-  structure_chunk *new_s;
-  structure_chunk *s;
+  structure_chunk<T> *new_s;
+  structure_chunk<T> *s;
   const char *outdir;
   int chunk_idx;
 
-  fields_chunk(structure_chunk *, const char *outdir, double m, double beta,
+  fields_chunk(structure_chunk<T> *, const char *outdir, double m, double beta,
                bool zero_fields_near_cylorigin, int chunkidx);
 
-  fields_chunk(const fields_chunk &, int chunkidx);
+  fields_chunk(const fields_chunk<T> &, int chunkidx);
   ~fields_chunk();
 
   void use_real_fields();
@@ -1401,7 +1427,7 @@ public:
   void set_output_directory(const char *name);
 
   double count_volume(component);
-  friend class fields;
+  friend class fields<T>;
 
   int n_proc() const { return s->n_proc(); };
   int is_mine() const { return s->is_mine(); };
@@ -1440,7 +1466,7 @@ private:
   component plus_component[NUM_FIELD_COMPONENTS], minus_component[NUM_FIELD_COMPONENTS];
   direction plus_deriv_direction[NUM_FIELD_COMPONENTS], minus_deriv_direction[NUM_FIELD_COMPONENTS];
   // step.cpp
-  void phase_in_material(structure_chunk *s);
+  void phase_in_material(structure_chunk<T> *s);
   void phase_material(int phasein_time);
   bool step_db(field_type ft);
   void step_source(field_type ft, bool including_integrated);
@@ -1473,7 +1499,7 @@ enum time_sink {
   Other
 };
 
-typedef void (*field_chunkloop)(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec ie,
+typedef void (*field_chunkloop)(fields_chunk<realnum> *fc, int ichunk, component cgrid, ivec is, ivec ie,
                                 vec s0, vec s1, vec e0, vec e1, double dV0, double dV1, ivec shift,
                                 std::complex<double> shift_phase, const symmetry &S, int sn,
                                 void *chunkloop_data);
@@ -1488,19 +1514,20 @@ field_rfunction derived_component_func(derived_component c, const grid_volume &g
 /* A utility class for loop_in_chunks, for fetching values of field
    components at grid points, accounting for the complications
    of symmetry and yee-grid averaging. */
+template<class T>
 class chunkloop_field_components {
 private:
-  fields_chunk *fc;
+  fields_chunk<T> *fc;
   std::vector<component> parent_components;
   std::vector<std::complex<double> > phases;
   std::vector<ptrdiff_t> offsets;
 
 public:
-  chunkloop_field_components(fields_chunk *fc, component cgrid, std::complex<double> shift_phase,
+  chunkloop_field_components(fields_chunk<T> *fc, component cgrid, std::complex<double> shift_phase,
                              const symmetry &S, int sn, int num_fields,
                              const component *components);
 #if __cplusplus >= 201103L // delegating constructors are a C++11 feature
-  chunkloop_field_components(fields_chunk *fc, component cgrid, std::complex<double> shift_phase,
+  chunkloop_field_components(fields_chunk<T> *fc, component cgrid, std::complex<double> shift_phase,
                              const symmetry &S, int sn, std::vector<component> components)
       : chunkloop_field_components(fc, cgrid, shift_phase, S, sn, components.size(),
                                    components.data()) {}
@@ -1549,18 +1576,19 @@ private:
 /***************************************************************/
 typedef vec (*kpoint_func)(double freq, int mode, void *user_data);
 
+template<class T>
 class fields {
 public:
   int num_chunks;
   bool shared_chunks;
-  fields_chunk **chunks;
+  fields_chunk<T> **chunks;
   src_time *sources;
-  flux_vol *fluxes;
+  flux_vol<T> *fluxes;
   symmetry S;
 
   // The following is an array that is num_chunks by num_chunks.  Actually
   // it is two arrays, one for the imaginary and one for the real part.
-  realnum **comm_blocks[NUM_FIELD_TYPES];
+  T **comm_blocks[NUM_FIELD_TYPES];
   // This is the same size as each comm_blocks array, and store the sizes
   // of the comm blocks themselves for each connection-phase type
   size_t *comm_sizes[NUM_FIELD_TYPES][CONNECT_COPY + 1];
@@ -1584,7 +1612,7 @@ public:
   bool components_allocated;
 
   // fields.cpp methods:
-  fields(structure *, double m = 0, double beta = 0, bool zero_fields_near_cylorigin = true);
+  fields(structure<T> *, double m = 0, double beta = 0, bool zero_fields_near_cylorigin = true);
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;
@@ -1758,13 +1786,13 @@ public:
                             std::complex<double> A(const vec &) = 0,
                             diffractedplanewave *dp = 0);
 
-  void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
+  void get_eigenmode_coefficients(dft_flux<T> flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func, void *user_kpoint_data,
                                   vec *kpoints, vec *kdom, double *cscale, direction d,
                                   diffractedplanewave *dp = 0);
-  void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
+  void get_eigenmode_coefficients(dft_flux<T> flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func = 0, void *user_kpoint_data = 0,
@@ -1777,7 +1805,7 @@ public:
   void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int ntot);
   void initialize_with_n_tm(int ntot);
-  int phase_in_material(const structure *s, double time);
+  int phase_in_material(const structure<T> *s, double time);
   int is_phasing();
 
   // loop_in_chunks.cpp
@@ -1808,93 +1836,93 @@ public:
   double max_abs(derived_component c, const volume &where);
 
   // dft.cpp
-  dft_chunk *add_dft(component c, const volume &where, double freq_min, double freq_max, int Nfreq,
-                     bool include_dV_and_interp_weights = true,
-                     std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
-                     bool sqrt_dV_and_interp_weights = false,
-                     std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
-                     int vc = 0) {
+  dft_chunk<T> *add_dft(component c, const volume &where, double freq_min, double freq_max, int Nfreq,
+                        bool include_dV_and_interp_weights = true,
+                        std::complex<double> stored_weight = 1.0, dft_chunk<T> *chunk_next = 0,
+                        bool sqrt_dV_and_interp_weights = false,
+                        std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
+                        int vc = 0) {
     return add_dft(c, where, linspace(freq_min, freq_max, Nfreq), include_dV_and_interp_weights,
                    stored_weight, chunk_next, sqrt_dV_and_interp_weights, extra_weight,
                    use_centered_grid, vc);
   }
-  dft_chunk *add_dft(component c, const volume &where, const double *freq, size_t Nfreq,
-                     bool include_dV_and_interp_weights = true,
-                     std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
-                     bool sqrt_dV_and_interp_weights = false,
-                     std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
-                     int vc = 0);
-  dft_chunk *add_dft(component c, const volume &where, const std::vector<double> freq,
-                     bool include_dV_and_interp_weights = true,
-                     std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
-                     bool sqrt_dV_and_interp_weights = false,
-                     std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
-                     int vc = 0) {
+  dft_chunk<T> *add_dft(component c, const volume &where, const double *freq, size_t Nfreq,
+                        bool include_dV_and_interp_weights = true,
+                        std::complex<double> stored_weight = 1.0, dft_chunk<T> *chunk_next = 0,
+                        bool sqrt_dV_and_interp_weights = false,
+                        std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
+                        int vc = 0);
+  dft_chunk<T> *add_dft(component c, const volume &where, const std::vector<double> freq,
+                        bool include_dV_and_interp_weights = true,
+                        std::complex<double> stored_weight = 1.0, dft_chunk<T> *chunk_next = 0,
+                        bool sqrt_dV_and_interp_weights = false,
+                        std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
+                        int vc = 0) {
     return add_dft(c, where, freq.data(), freq.size(), include_dV_and_interp_weights, stored_weight,
                    chunk_next, sqrt_dV_and_interp_weights, extra_weight, use_centered_grid, vc);
   }
-  dft_chunk *add_dft_pt(component c, const vec &where, double freq_min, double freq_max,
-                        int Nfreq) {
+  dft_chunk<T> *add_dft_pt(component c, const vec &where, double freq_min, double freq_max,
+                           int Nfreq) {
     return add_dft(c, where, linspace(freq_min, freq_max, Nfreq), false);
   }
-  dft_chunk *add_dft_pt(component c, const vec &where, const std::vector<double> freq) {
+  dft_chunk<T> *add_dft_pt(component c, const vec &where, const std::vector<double> freq) {
     return add_dft(c, where, freq, false);
   }
-  dft_chunk *add_dft(const volume_list *where, double freq_min, double freq_max, int Nfreq,
-                     bool include_dV = true) {
+  dft_chunk<T> *add_dft(const volume_list *where, double freq_min, double freq_max, int Nfreq,
+                        bool include_dV = true) {
     return add_dft(where, linspace(freq_min, freq_max, Nfreq), include_dV);
   }
-  dft_chunk *add_dft(const volume_list *where, const std::vector<double> freq,
-                     bool include_dV = true);
+  dft_chunk<T> *add_dft(const volume_list *where, const std::vector<double> freq,
+                        bool include_dV = true);
   void update_dfts();
-  dft_flux add_dft_flux(const volume_list *where, const double *freq, size_t Nfreq,
-                        bool use_symmetry = true, bool centered_grid = true);
-  dft_flux add_dft_flux(const volume_list *where, const std::vector<double> freq,
-                        bool use_symmetry = true, bool centered_grid = true) {
+  dft_flux<T> add_dft_flux(const volume_list *where, const double *freq, size_t Nfreq,
+                           bool use_symmetry = true, bool centered_grid = true);
+  dft_flux<T> add_dft_flux(const volume_list *where, const std::vector<double> freq,
+                           bool use_symmetry = true, bool centered_grid = true) {
     return add_dft_flux(where, freq.data(), freq.size(), use_symmetry, centered_grid);
   }
-  dft_flux add_dft_flux(const volume_list *where, double freq_min, double freq_max, int Nfreq,
-                        bool use_symmetry = true, bool centered_grid = true) {
+  dft_flux<T> add_dft_flux(const volume_list *where, double freq_min, double freq_max, int Nfreq,
+                           bool use_symmetry = true, bool centered_grid = true) {
     return add_dft_flux(where, linspace(freq_min, freq_max, Nfreq), use_symmetry, centered_grid);
   }
-  dft_flux add_dft_flux(direction d, const volume &where, double freq_min, double freq_max,
-                        int Nfreq, bool use_symmetry = true, bool centered_grid = true) {
+  dft_flux<T> add_dft_flux(direction d, const volume &where, double freq_min, double freq_max,
+                           int Nfreq, bool use_symmetry = true, bool centered_grid = true) {
     return add_dft_flux(d, where, linspace(freq_min, freq_max, Nfreq), use_symmetry, centered_grid);
   }
-  dft_flux add_dft_flux(direction d, const volume &where, const std::vector<double> freq,
-                        bool use_symmetry = true, bool centered_grid = true) {
+  dft_flux<T> add_dft_flux(direction d, const volume &where, const std::vector<double> freq,
+                           bool use_symmetry = true, bool centered_grid = true) {
     return add_dft_flux(d, where, freq.data(), freq.size(), use_symmetry, centered_grid);
   }
-  dft_flux add_dft_flux(direction d, const volume &where, const double *freq, size_t Nfreq,
-                        bool use_symmetry = true, bool centered_grid = true);
-  dft_flux add_dft_flux_box(const volume &where, double freq_min, double freq_max, int Nfreq);
-  dft_flux add_dft_flux_box(const volume &where, const std::vector<double> freq);
-  dft_flux add_dft_flux_plane(const volume &where, double freq_min, double freq_max, int Nfreq);
-  dft_flux add_dft_flux_plane(const volume &where, const std::vector<double> freq);
+  dft_flux<T> add_dft_flux(direction d, const volume &where, const double *freq, size_t Nfreq,
+                           bool use_symmetry = true, bool centered_grid = true);
+  dft_flux<T> add_dft_flux_box(const volume &where, double freq_min, double freq_max, int Nfreq);
+  dft_flux<T> add_dft_flux_box(const volume &where, const std::vector<double> freq);
+  dft_flux<T> add_dft_flux_plane(const volume &where, double freq_min, double freq_max, int Nfreq);
+  dft_flux<T> add_dft_flux_plane(const volume &where, const std::vector<double> freq);
 
   // a "mode monitor" is just a dft_flux with symmetry reduction turned off.
-  dft_flux add_mode_monitor(direction d, const volume &where, double freq_min, double freq_max,
-                            int Nfreq, bool centered_grid = true) {
+  dft_flux<T> add_mode_monitor(direction d, const volume &where, double freq_min, double freq_max,
+                               int Nfreq, bool centered_grid = true) {
     return add_mode_monitor(d, where, linspace(freq_min, freq_max, Nfreq), centered_grid);
   }
-  dft_flux add_mode_monitor(direction d, const volume &where, const std::vector<double> freq, bool centered_grid = true) {
+  dft_flux<T> add_mode_monitor(direction d, const volume &where, const std::vector<double> freq, bool centered_grid = true) {
     return add_mode_monitor(d, where, freq.data(), freq.size(), centered_grid);
   }
-  dft_flux add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq, bool centered_grid = true);
+  dft_flux<T> add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq, bool centered_grid = true);
 
-  dft_fields add_dft_fields(component *components, int num_components, const volume where,
-                            double freq_min, double freq_max, int Nfreq,
-                            bool use_centered_grid = true) {
+  dft_fields<T> add_dft_fields(component *components, int num_components, const volume where,
+                               double freq_min, double freq_max, int Nfreq,
+                               bool use_centered_grid = true) {
     return add_dft_fields(components, num_components, where, linspace(freq_min, freq_max, Nfreq),
                           use_centered_grid);
   }
-  dft_fields add_dft_fields(component *components, int num_components, const volume where,
-                            const std::vector<double> freq, bool use_centered_grid = true) {
+  dft_fields<T> add_dft_fields(component *components, int num_components, const volume where,
+                               const std::vector<double> freq, bool use_centered_grid = true) {
     return add_dft_fields(components, num_components, where, freq.data(), freq.size(),
                           use_centered_grid);
   }
-  dft_fields add_dft_fields(component *components, int num_components, const volume where,
-                            const double *freq, size_t Nfreq, bool use_centered_grid = true);
+  dft_fields<T> add_dft_fields(component *components, int num_components, const volume where,
+                               const double *freq, size_t Nfreq, bool use_centered_grid = true);
 
   /********************************************************/
   /* process_dft_component is an intermediate-level       */
@@ -1904,7 +1932,7 @@ public:
   /* of DFT fields, and  evaluating overlap integrals     */
   /* flux and mode fields.)                               */
   /********************************************************/
-  std::complex<double> process_dft_component(dft_chunk **chunklists, int num_chunklists,
+  std::complex<double> process_dft_component(dft_chunk<T> **chunklists, int num_chunklists,
                                              int num_freq, component c, const char *HDF5FileName,
                                              std::complex<double> **field_array = 0, int *rank = 0,
                                              size_t *dims = 0, direction *dirs = 0,
@@ -1913,60 +1941,60 @@ public:
                                              bool retain_interp_weights = true);
 
   // output DFT fields to HDF5 file
-  void output_dft_components(dft_chunk **chunklists, int num_chunklists, volume dft_volume,
+  void output_dft_components(dft_chunk<T> **chunklists, int num_chunklists, volume dft_volume,
                              const char *HDF5FileName);
 
-  void output_dft(dft_flux flux, const char *HDF5FileName);
-  void output_dft(dft_force force, const char *HDF5FileName);
-  void output_dft(dft_near2far n2f, const char *HDF5FileName);
-  void output_dft(dft_fields fdft, const char *HDF5FileName);
+  void output_dft(dft_flux<T> flux, const char *HDF5FileName);
+  void output_dft(dft_force<T> force, const char *HDF5FileName);
+  void output_dft(dft_near2far<T> n2f, const char *HDF5FileName);
+  void output_dft(dft_fields<T> fdft, const char *HDF5FileName);
 
   // get array of DFT field values
-  std::complex<double> *get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
+  std::complex<double> *get_dft_array(dft_flux<T> flux, component c, int num_freq, int *rank,
                                       size_t dims[3]);
-  std::complex<double> *get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
+  std::complex<double> *get_dft_array(dft_fields<T> fdft, component c, int num_freq, int *rank,
                                       size_t dims[3]);
-  std::complex<double> *get_dft_array(dft_force force, component c, int num_freq, int *rank,
+  std::complex<double> *get_dft_array(dft_force<T> force, component c, int num_freq, int *rank,
                                       size_t dims[3]);
-  std::complex<double> *get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
+  std::complex<double> *get_dft_array(dft_near2far<T> n2f, component c, int num_freq, int *rank,
                                       size_t dims[3]);
 
   // overlap integrals between eigenmode fields and DFT flux fields
-  void get_overlap(void *mode1_data, void *mode2_data, dft_flux flux, int num_freq,
+  void get_overlap(void *mode1_data, void *mode2_data, dft_flux<T> flux, int num_freq,
                    std::complex<double> overlaps[2]);
-  void get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
+  void get_mode_flux_overlap(void *mode_data, dft_flux<T> flux, int num_freq,
                              std::complex<double> overlaps[2]);
-  void get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
+  void get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux<T> flux,
                              std::complex<double> overlaps[2]);
 
-  dft_energy add_dft_energy(const volume_list *where, double freq_min, double freq_max, int Nfreq) {
+  dft_energy<T> add_dft_energy(const volume_list *where, double freq_min, double freq_max, int Nfreq) {
     return add_dft_energy(where, linspace(freq_min, freq_max, Nfreq));
   }
-  dft_energy add_dft_energy(const volume_list *where, const std::vector<double> freq) {
+  dft_energy<T> add_dft_energy(const volume_list *where, const std::vector<double> freq) {
     return add_dft_energy(where, freq.data(), freq.size());
   }
-  dft_energy add_dft_energy(const volume_list *where, const double *freq, size_t Nfreq);
+  dft_energy<T> add_dft_energy(const volume_list *where, const double *freq, size_t Nfreq);
 
   // stress.cpp
-  dft_force add_dft_force(const volume_list *where, double freq_min, double freq_max, int Nfreq) {
+  dft_force<T> add_dft_force(const volume_list *where, double freq_min, double freq_max, int Nfreq) {
     return add_dft_force(where, linspace(freq_min, freq_max, Nfreq));
   }
-  dft_force add_dft_force(const volume_list *where, const std::vector<double> freq) {
+  dft_force<T> add_dft_force(const volume_list *where, const std::vector<double> freq) {
     return add_dft_force(where, freq.data(), freq.size());
   }
-  dft_force add_dft_force(const volume_list *where, const double *freq, size_t Nfreq);
+  dft_force<T> add_dft_force(const volume_list *where, const double *freq, size_t Nfreq);
 
   // near2far.cpp
-  dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
-                                int Nfreq, int Nperiods = 1) {
+  dft_near2far<T> add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
+                                   int Nfreq, int Nperiods = 1) {
     return add_dft_near2far(where, linspace(freq_min, freq_max, Nfreq), Nperiods);
   }
-  dft_near2far add_dft_near2far(const volume_list *where, const std::vector<double> freq,
-                                int Nperiods = 1) {
+  dft_near2far<T> add_dft_near2far(const volume_list *where, const std::vector<double> freq,
+                                   int Nperiods = 1) {
     return add_dft_near2far(where, freq.data(), freq.size(), Nperiods);
   }
-  dft_near2far add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
-                                int Nperiods = 1);
+  dft_near2far<T> add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
+                                   int Nperiods = 1);
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
                                    bool parallel = true) const;
@@ -1996,9 +2024,9 @@ public:
   double field_energy();
   double flux_in_box_wrongH(direction d, const volume &);
   double flux_in_box(direction d, const volume &);
-  flux_vol *add_flux_vol(direction d, const volume &where);
-  flux_vol *add_flux_plane(const volume &where);
-  flux_vol *add_flux_plane(const vec &p1, const vec &p2);
+  flux_vol<T> *add_flux_vol(direction d, const volume &where);
+  flux_vol<T> *add_flux_plane(const volume &where);
+  flux_vol<T> *add_flux_plane(const vec &p1, const vec &p2);
   double electric_energy_max_in_box(const volume &where);
   double modal_volume_in_box(const volume &where);
   double electric_sqr_weighted_integral(double (*deps)(const vec &), const volume &where);
@@ -2069,9 +2097,10 @@ public:
   void reset_timers();
 };
 
+template<class T>
 class flux_vol {
 public:
-  flux_vol(fields *f_, direction d_, const volume &where_) : where(where_) {
+  flux_vol(fields<T> *f_, direction d_, const volume &where_) : where(where_) {
     f = f_;
     d = d_;
     cur_flux = cur_flux_half = 0;
@@ -2095,7 +2124,7 @@ public:
 
 private:
   double flux_wrongE() { return f->flux_in_box_wrongH(d, where); }
-  fields *f;
+  fields<T> *f;
   direction d;
   volume where;
   double cur_flux, cur_flux_half;

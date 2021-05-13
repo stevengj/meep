@@ -90,6 +90,7 @@ complex<double> *dft_ldos::J() const {
   return out;
 }
 
+template <class T>
 void dft_ldos::update(fields &f) {
   complex<double> EJ = 0.0; // integral E * J*
   complex<double> HJ = 0.0; // integral H * J* for magnetic currents
@@ -104,8 +105,8 @@ void dft_ldos::update(fields &f) {
     if (f.chunks[ic]->is_mine()) {
       for (src_vol *sv = f.chunks[ic]->sources[D_stuff]; sv; sv = sv->next) {
         component c = direction_component(Ex, component_direction(sv->c));
-        realnum *fr = f.chunks[ic]->f[c][0];
-        realnum *fi = f.chunks[ic]->f[c][1];
+        T *fr = f.chunks[ic]->f[c][0];
+        T *fi = f.chunks[ic]->f[c][1];
         if (fr && fi) // complex E
           for (size_t j = 0; j < sv->npts; j++) {
             const ptrdiff_t idx = sv->index[j];
@@ -124,8 +125,8 @@ void dft_ldos::update(fields &f) {
       }
       for (src_vol *sv = f.chunks[ic]->sources[B_stuff]; sv; sv = sv->next) {
         component c = direction_component(Hx, component_direction(sv->c));
-        realnum *fr = f.chunks[ic]->f[c][0];
-        realnum *fi = f.chunks[ic]->f[c][1];
+        T *fr = f.chunks[ic]->f[c][0];
+        T *fi = f.chunks[ic]->f[c][1];
         if (fr && fi) // complex H
           for (size_t j = 0; j < sv->npts; j++) {
             const ptrdiff_t idx = sv->index[j];

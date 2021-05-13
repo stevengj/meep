@@ -197,11 +197,12 @@ void fields::step_source(field_type ft, bool including_integrated) {
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->step_source(ft, including_integrated);
 }
+template <class T>
 void fields_chunk::step_source(field_type ft, bool including_integrated) {
   if (doing_solve_cw && !including_integrated) return;
   for (src_vol *sv = sources[ft]; sv; sv = sv->next) {
     component c = direction_component(first_field_component(ft), component_direction(sv->c));
-    const realnum *cndinv = s->condinv[c][component_direction(sv->c)];
+    const T *cndinv = s->condinv[c][component_direction(sv->c)];
     if ((including_integrated || !sv->t->is_integrated) && f[c][0] &&
         ((ft == D_stuff && is_electric(sv->c)) || (ft == B_stuff && is_magnetic(sv->c)))) {
       if (cndinv)

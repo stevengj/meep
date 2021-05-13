@@ -389,6 +389,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
 
 // Reads amplitude function data from h5file 'filename.' Assumes real and imaginary components
 // of 'dataset' exist with '.re' and '.im' extensions.
+template <class T>
 void fields::add_volume_source(component c, const src_time &src, const volume &where_,
                                const char *filename, const char *dataset, complex<double> amp) {
 
@@ -398,13 +399,13 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   std::string dataset_im = std::string(dataset) + ".im";
 
   size_t re_dims[] = {1, 1, 1};
-  realnum *real_data = (realnum *)eps_file.read(dataset_re.c_str(), &rank, re_dims, 3, sizeof(realnum) == sizeof(float));
+  T *real_data = (T *)eps_file.read(dataset_re.c_str(), &rank, re_dims, 3, sizeof(T) == sizeof(float));
   if (verbosity > 0)
     master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n", re_dims[0], re_dims[1],
                   re_dims[2], filename, dataset_re.c_str());
 
   size_t im_dims[] = {1, 1, 1};
-  realnum *imag_data = (realnum *)eps_file.read(dataset_im.c_str(), &rank, im_dims, 3, sizeof(realnum) == sizeof(float));
+  T *imag_data = (T *)eps_file.read(dataset_im.c_str(), &rank, im_dims, 3, sizeof(T) == sizeof(float));
   if (verbosity > 0)
     master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n", im_dims[0], im_dims[1],
                   im_dims[2], filename, dataset_im.c_str());

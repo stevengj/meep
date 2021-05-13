@@ -22,12 +22,13 @@ using namespace std;
 
 namespace meep {
 
-static void fields_to_array(const fields &f, complex<realnum> *x) {
+template <class T>
+static void fields_to_array(const fields &f, complex<T> *x) {
   size_t ix = 0;
   for (int i = 0; i < f.num_chunks; i++)
     if (f.chunks[i]->is_mine()) FOR_COMPONENTS(c) {
         if (is_D(c) || is_B(c)) {
-          realnum *fr, *fi;
+          T *fr, *fi;
 #define COPY_FROM_FIELD(fld)                                                                       \
   if ((fr = f.chunks[i]->fld[0]) && (fi = f.chunks[i]->fld[1]))                                    \
     LOOP_OVER_VOL_OWNED(f.chunks[i]->gv, c, idx)                                                   \
@@ -43,12 +44,12 @@ static void fields_to_array(const fields &f, complex<realnum> *x) {
       }
 }
 
-static void array_to_fields(const complex<realnum> *x, fields &f) {
+static void array_to_fields(const complex<T> *x, fields &f) {
   size_t ix = 0;
   for (int i = 0; i < f.num_chunks; i++)
     if (f.chunks[i]->is_mine()) FOR_COMPONENTS(c) {
         if (is_D(c) || is_B(c)) {
-          realnum *fr, *fi;
+          T *fr, *fi;
 #define COPY_TO_FIELD(fld)                                                                         \
   if ((fr = f.chunks[i]->fld[0]) && (fi = f.chunks[i]->fld[1]))                                    \
     LOOP_OVER_VOL_OWNED(f.chunks[i]->gv, c, idx) {                                                 \
@@ -81,32 +82,34 @@ typedef struct {
   complex<double> iomega;
 } fieldop_data;
 
-static void fieldop(const realnum *xr, realnum *yr, void *data_) {
-  const complex<realnum> *x = reinterpret_cast<const complex<realnum> *>(xr);
-  complex<realnum> *y = reinterpret_cast<complex<realnum> *>(yr);
+template <class T>
+static void fieldop(const T *xr, T *yr, void *data_) {
+  const complex<T> *x = reinterpret_cast<const complex<T> *>(xr);
+  complex<T> *y = reinterpret_cast<complex<T> *>(yr);
   fieldop_data *data = (fieldop_data *)data_;
   array_to_fields(x, *data->f);
   data->f->step();
   fields_to_array(*data->f, y);
   size_t n = data->n;
-  realnum dt_inv = 1.0 / data->f->dt;
-  complex<realnum> iomega = complex<realnum>(real(data->iomega), imag(data->iomega));
+  T dt_inv = 1.0 / data->f->dt;
+  complex<T> iomega = complex<T>(real(data->iomega), imag(data->iomega));
   for (size_t i = 0; i < n; ++i)
     y[i] = (y[i] - x[i]) * dt_inv + iomega * x[i];
 }
 
 // Rayleigh-quotient estimate <x,Ax>/<x,x> for eigenfrequency given approximate eigenvector x
 // (length n), overwriting x with Ax and b with x/|x|.
-static complex<double> estimate_eigfreq(complex<realnum> *b, complex<realnum> *x, size_t n,
+template <class T>
+static complex<double> estimate_eigfreq(complex<T> *b, complex<T> *x, size_t n,
                                         fieldop_data *data) {
-  memcpy(b, x, n * sizeof(complex<realnum>));
-  fieldop(reinterpret_cast<realnum *>(b), reinterpret_cast<realnum *>(x), (void *)data);
+  memcpy(b, x, n * sizeof(complex<T>));
+  fieldop(reinterpret_cast<T *>(b), reinterpret_cast<T *>(x), (void *)data);
   complex<double> bdotx(0, 0);
   double bnorm2 = 0;
   for (size_t i = 0; i < n; ++i) {
-    complex<realnum> bi = b[i];
+    complex<T> bi = b[i];
     bnorm2 += real(bi) * real(bi) + imag(bi) * imag(bi);
-    complex<realnum> bx = conj(bi) * x[i];
+    complex<T> bx = conj(bi) * x[i];
     bdotx += complex<double>(real(bx), imag(bx));
   }
   bnorm2 = sum_to_all(bnorm2);
@@ -137,6 +140,7 @@ static complex<double> estimate_eigfreq(complex<realnum> *b, complex<realnum> *x
    shift-and-invert power iteration to find the closest eigenfrequency and
    eigenvector to frequency: the solver is iterated up to eigiters times,
    or until the estimated eigenfreq stops changing by <= eigtol (relative). */
+template <class T>
 bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L,
                       complex<double> *eigfreq, double eigtol, int eigiters) {
   if (is_real) abort("solve_cw is incompatible with use_real_fields()");
@@ -169,9 +173,9 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
 
   iters = maxiters;
   size_t nwork = (size_t)bicgstabL(L, N, 0, 0, 0, 0, tol, &iters, 0, true);
-  realnum *work = new realnum[nwork + 2 * N];
-  complex<realnum> *x = reinterpret_cast<complex<realnum> *>(work + nwork);
-  complex<realnum> *b = reinterpret_cast<complex<realnum> *>(work + nwork + N);
+  T *work = new T[nwork + 2 * N];
+  complex<T> *x = reinterpret_cast<complex<T> *>(work + nwork);
+  complex<T> *b = reinterpret_cast<complex<T> *>(work + nwork + N);
 
   fields_to_array(*this, x); // initial guess = initial fields
 
@@ -206,8 +210,8 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
   data.iomega = ((1.0 - exp(complex<double>(0., -1.) * (2 * pi * frequency) * dt)) * (1.0 / dt));
   iters = maxiters;
 
-  int ierr = (int)bicgstabL(L, N, reinterpret_cast<realnum *>(x), fieldop, &data,
-                            reinterpret_cast<realnum *>(b), tol, &iters, work, verbosity == 0);
+  int ierr = (int)bicgstabL(L, N, reinterpret_cast<T *>(x), fieldop, &data,
+                            reinterpret_cast<T *>(b), tol, &iters, work, verbosity == 0);
 
   if (verbosity > 0) {
     master_printf("Finished solve_cw after %d CG iters (~ %d timesteps).\n", iters, iters * 2 * L);
@@ -222,8 +226,8 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
     }
     for (int eigiter = 0; eigiter < eigiters; ++eigiter) {
       iters = maxiters;
-      int ierr = (int)bicgstabL(L, N, reinterpret_cast<realnum *>(x), fieldop, &data,
-                                reinterpret_cast<realnum *>(b), tol, &iters, work, verbosity == 0);
+      int ierr = (int)bicgstabL(L, N, reinterpret_cast<T *>(x), fieldop, &data,
+                                reinterpret_cast<T *>(b), tol, &iters, work, verbosity == 0);
       complex<double> newfreq = estimate_eigfreq(b, x, data.n, &data);
       complex<double> dfreq = newfreq - *eigfreq;
       if (verbosity > 0) {
@@ -234,7 +238,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
       *eigfreq = newfreq;
       if (abs(dfreq) <= eigtol * abs(newfreq)) break; // converged
     }
-    memcpy(x, b, N * sizeof(realnum));
+    memcpy(x, b, N * sizeof(T));
   }
 
   array_to_fields(x, *this);

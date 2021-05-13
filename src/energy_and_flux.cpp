@@ -94,6 +94,7 @@ double fields::magnetic_energy_in_box(const volume &where) {
   return sum;
 }
 
+template <class T>
 void fields_chunk::backup_component(component c) {
   DOCMP {
     if (c < NUM_FIELD_COMPONENTS && f[c][cmp] &&
@@ -102,8 +103,8 @@ void fields_chunk::backup_component(component c) {
 
 #define BACKUP(f)                                                                                  \
   if (f[c][cmp]) {                                                                                 \
-    if (!f##_backup[c][cmp]) f##_backup[c][cmp] = new realnum[gv.ntot()];                          \
-    memcpy(f##_backup[c][cmp], f[c][cmp], gv.ntot() * sizeof(realnum));                            \
+    if (!f##_backup[c][cmp]) f##_backup[c][cmp] = new T[gv.ntot()];                                \
+    memcpy(f##_backup[c][cmp], f[c][cmp], gv.ntot() * sizeof(T));                                  \
   }
 
       BACKUP(f);
@@ -120,7 +121,7 @@ void fields_chunk::restore_component(component c) {
   DOCMP {
 #define RESTORE(f)                                                                                 \
   if (f##_backup[c][cmp] && f[c][cmp])                                                             \
-    memcpy(f[c][cmp], f##_backup[c][cmp], gv.ntot() * sizeof(realnum));
+    memcpy(f[c][cmp], f##_backup[c][cmp], gv.ntot() * sizeof(T));
 
     RESTORE(f);
     RESTORE(f_u);
@@ -133,8 +134,8 @@ void fields_chunk::restore_component(component c) {
 
 void fields_chunk::average_with_backup(component c) {
   DOCMP {
-    realnum *fc = f[c][cmp];
-    realnum *backup = f_backup[c][cmp];
+    T *fc = f[c][cmp];
+    T *backup = f_backup[c][cmp];
     if (fc && backup)
       for (size_t i = 0; i < gv.ntot(); i++)
         fc[i] = 0.5 * (fc[i] + backup[i]);

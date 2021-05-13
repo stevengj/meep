@@ -1864,8 +1864,9 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
 %newobject create_structure_and_set_materials;
 %inline %{
 
-size_t get_realnum_size() {
-  return sizeof(meep::realnum);
+template <class T>
+size_t get_T_size() {
+  return sizeof(T);
 }
 
 meep::structure *create_structure_and_set_materials(vector3 cell_size,

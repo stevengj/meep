@@ -48,7 +48,8 @@ monitor_point::~monitor_point() {
   if (next) delete next;
 }
 
-inline complex<double> getcm(const realnum *const f[2], size_t i) {
+template <class T>
+inline complex<double> getcm(const T *const f[2], size_t i) {
   return complex<double>(f[0][i], f[1][i]);
 }
 

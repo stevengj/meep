@@ -206,6 +206,7 @@ chunkloop_field_components::chunkloop_field_components(fields_chunk *fc, compone
   }
 }
 
+template <class T>
 void chunkloop_field_components::update_values(ptrdiff_t idx) {
   for (size_t nc = 0; nc < values.size(); nc++) {
     // do appropriate averaging to get value of field component at grid point
@@ -213,7 +214,7 @@ void chunkloop_field_components::update_values(ptrdiff_t idx) {
     ptrdiff_t ofs1 = offsets[2 * nc], ofs2 = offsets[2 * nc + 1];
     double favg[2] = {0.0, 0.0}; // real, imag parts
     for (int reim = 0; reim < 2; reim++) {
-      const realnum *fgrid = fc->f[cparent][reim];
+      const T *fgrid = fc->f[cparent][reim];
       if (!fgrid) continue;
       favg[reim] =
           0.25 * (fgrid[idx] + fgrid[idx + ofs1] + fgrid[idx + ofs2] + fgrid[idx + ofs1 + ofs2]);

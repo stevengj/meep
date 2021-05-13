@@ -27,6 +27,7 @@ using namespace std;
 
 namespace meep {
 
+template <class T>
 fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylorigin)
     : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta) {
   shared_chunks = s->shared_chunks;
@@ -61,8 +62,8 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
       for (int i = 0; i < num_chunks * num_chunks; i++)
         comm_sizes[ft][ip][i] = 0;
     }
-    typedef realnum *realnum_ptr;
-    comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
+    typedef T *T_ptr;
+    comm_blocks[ft] = new T_ptr[num_chunks * num_chunks];
     for (int i = 0; i < num_chunks * num_chunks; i++)
       comm_blocks[ft][i] = 0;
   }
@@ -83,6 +84,7 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
   }
 }
 
+template <class T>
 fields::fields(const fields &thef)
     : S(thef.S), gv(thef.gv), user_volume(thef.user_volume), v(thef.v) {
   shared_chunks = thef.shared_chunks;
@@ -118,8 +120,8 @@ fields::fields(const fields &thef)
       for (int i = 0; i < num_chunks * num_chunks; i++)
         comm_sizes[ft][ip][i] = 0;
     }
-    typedef realnum *realnum_ptr;
-    comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
+    typedef T *T_ptr;
+    comm_blocks[ft] = new T_ptr[num_chunks * num_chunks];
     for (int i = 0; i < num_chunks * num_chunks; i++)
       comm_blocks[ft][i] = 0;
   }
@@ -268,6 +270,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   figure_out_step_plan();
 }
 
+template <class T>
 fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv), v(thef.v) {
   chunk_idx = chunkidx;
   s = thef.s;
@@ -316,28 +319,28 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
   }
   FOR_COMPONENTS(c) DOCMP {
     if (!is_magnetic(c) && thef.f[c][cmp]) {
-      f[c][cmp] = new realnum[gv.ntot()];
-      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(realnum) * gv.ntot());
+      f[c][cmp] = new T[gv.ntot()];
+      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(T) * gv.ntot());
     }
     if (thef.f_u[c][cmp]) {
-      f_u[c][cmp] = new realnum[gv.ntot()];
-      memcpy(f_u[c][cmp], thef.f_u[c][cmp], sizeof(realnum) * gv.ntot());
+      f_u[c][cmp] = new T[gv.ntot()];
+      memcpy(f_u[c][cmp], thef.f_u[c][cmp], sizeof(T) * gv.ntot());
     }
     if (thef.f_w[c][cmp]) {
-      f_w[c][cmp] = new realnum[gv.ntot()];
-      memcpy(f_w[c][cmp], thef.f_w[c][cmp], sizeof(realnum) * gv.ntot());
+      f_w[c][cmp] = new T[gv.ntot()];
+      memcpy(f_w[c][cmp], thef.f_w[c][cmp], sizeof(T) * gv.ntot());
     }
     if (thef.f_cond[c][cmp]) {
-      f_cond[c][cmp] = new realnum[gv.ntot()];
-      memcpy(f_cond[c][cmp], thef.f_cond[c][cmp], sizeof(realnum) * gv.ntot());
+      f_cond[c][cmp] = new T[gv.ntot()];
+      memcpy(f_cond[c][cmp], thef.f_cond[c][cmp], sizeof(T) * gv.ntot());
     }
   }
   FOR_MAGNETIC_COMPONENTS(c) DOCMP {
     if (thef.f[c][cmp] == thef.f[c - Hx + Bx][cmp])
       f[c][cmp] = f[c - Hx + Bx][cmp];
     else if (thef.f[c][cmp]) {
-      f[c][cmp] = new realnum[gv.ntot()];
-      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(realnum) * gv.ntot());
+      f[c][cmp] = new T[gv.ntot()];
+      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(T) * gv.ntot());
     }
   }
   FOR_FIELD_TYPES(ft) {
@@ -352,12 +355,12 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
   }
   FOR_COMPONENTS(c) DOCMP2 {
     if (thef.f_minus_p[c][cmp]) {
-      f_minus_p[c][cmp] = new realnum[gv.ntot()];
-      memcpy(f_minus_p[c][cmp], thef.f_minus_p[c][cmp], sizeof(realnum) * gv.ntot());
+      f_minus_p[c][cmp] = new T[gv.ntot()];
+      memcpy(f_minus_p[c][cmp], thef.f_minus_p[c][cmp], sizeof(T) * gv.ntot());
     }
     if (thef.f_w_prev[c][cmp]) {
-      f_w_prev[c][cmp] = new realnum[gv.ntot()];
-      memcpy(f_w_prev[c][cmp], thef.f_w_prev[c][cmp], sizeof(realnum) * gv.ntot());
+      f_w_prev[c][cmp] = new T[gv.ntot()];
+      memcpy(f_w_prev[c][cmp], thef.f_w_prev[c][cmp], sizeof(T) * gv.ntot());
     }
   }
   f_rderiv_int = NULL;
@@ -446,6 +449,7 @@ static bool is_like(ndim d, component c1, component c2) {
 // instead it should be called via require_component,
 // since only require_component knows what other field components
 // need to be allocated in addition to c
+template <class T>
 bool fields_chunk::alloc_f(component c) {
   bool changed = false;
   if (is_mine()) DOCMP {
@@ -456,14 +460,14 @@ bool fields_chunk::alloc_f(component c) {
              H fields if needed (if mu != 1 or in PML) in update_eh */
           component bc = direction_component(Bx, component_direction(c));
           if (!f[bc][cmp]) {
-            f[bc][cmp] = new realnum[gv.ntot()];
+            f[bc][cmp] = new T[gv.ntot()];
             for (size_t i = 0; i < gv.ntot(); i++)
               f[bc][cmp][i] = 0.0;
           }
           f[c][cmp] = f[bc][cmp];
         }
         else {
-          f[c][cmp] = new realnum[gv.ntot()];
+          f[c][cmp] = new T[gv.ntot()];
           for (size_t i = 0; i < gv.ntot(); i++)
             f[c][cmp][i] = 0.0;
         }
@@ -575,10 +579,11 @@ void fields::remove_fluxes() {
   fluxes = NULL;
 }
 
+template <class T>
 void fields_chunk::zero_fields() {
   FOR_COMPONENTS(c) DOCMP {
 #define ZERO(array)                                                                                \
-  if (array) memset(array, 0, sizeof(realnum) * gv.ntot())
+  if (array) memset(array, 0, sizeof(T) * gv.ntot())
     ZERO(f[c][cmp]);
     ZERO(f_u[c][cmp]);
     ZERO(f_w[c][cmp]);

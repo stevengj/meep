@@ -32,6 +32,7 @@ namespace meep {
 
 // Write the parameters required to reconstruct the susceptibility (id, noise_amp (for noisy),
 // omega_0, gamma, no_omega_0_denominator)
+template <class T>
 void structure::write_susceptibility_params(h5file *file, const char *dname, int EorH) {
   // Get number of susceptibility params from first chunk, since all chunks will have
   // the same susceptibility list.
@@ -45,7 +46,7 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
   // Write params
   size_t params_start = 0;
   file->create_data(dname, 1, &params_ntotal, false /* append_data */,
-                    sizeof(realnum) == sizeof(float) /* single_precision */);
+                    sizeof(T) == sizeof(float) /* single_precision */);
   if (am_master()) {
     susceptibility *sus = chunks[0]->chiP[EorH];
     while (sus) {
@@ -303,6 +304,7 @@ void structure::dump(const char *filename) {
 }
 
 // Reconstruct the chiP lists of susceptibilities from the params hdf5 data
+template <class T>
 susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3], size_t ntot) {
   susceptibility *sus = NULL;
   susceptibility *res = NULL;
@@ -310,14 +312,14 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
 
   while (start < dims[0]) {
     size_t num_params_dims[3] = {1, 0, 0};
-    realnum num_params;
+    T num_params;
     file->read_chunk(rank, &start, num_params_dims, &num_params);
     start += num_params_dims[0];
     if (num_params == 4) {
       // This is a lorentzian_susceptibility and the next 4 values in the dataset
       // are id, omega_0, gamma, and no_omega_0_denominator.
       size_t lorentzian_dims[3] = {4, 0, 0};
-      realnum lorentzian_params[4];
+      T lorentzian_params[4];
       file->read_chunk(rank, &start, lorentzian_dims, lorentzian_params);
       start += lorentzian_dims[0];
 
@@ -342,7 +344,7 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
       // This is a noisy_lorentzian_susceptibility and the next 5 values in the dataset
       // are id, noise_amp, omega_0, gamma, and no_omega_0_denominator.
       size_t noisy_lorentzian_dims[3] = {5, 0, 0};
-      realnum noisy_lorentzian_params[5];
+      T noisy_lorentzian_params[5];
       file->read_chunk(rank, &start, noisy_lorentzian_dims, noisy_lorentzian_params);
       start += noisy_lorentzian_dims[0];
 
@@ -370,7 +372,7 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
       // This is a gyrotropic_susceptibility and the next 8 values in the dataset
       // are id, bias.x, bias.y, bias.z, omega_0, gamma, alpha, and model.
       size_t gyro_susc_dims[3] = {8, 0, 0};
-      realnum gyro_susc_params[8];
+      T gyro_susc_params[8];
       file->read_chunk(rank, &start, gyro_susc_dims, gyro_susc_params);
       start += gyro_susc_dims[0];
 
@@ -529,6 +531,7 @@ void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
   check_chunks();
 }
 
+template <class T>
 void structure::load(const char *filename) {
   h5file file(filename, h5file::READONLY, true);
 
@@ -564,7 +567,7 @@ void structure::load(const char *filename) {
           }
           else {
             if (n != ntot) abort("grid size mismatch %zd vs %zd in structure::load", n, ntot);
-            chunks[i]->chi1inv[c][d] = new realnum[ntot];
+            chunks[i]->chi1inv[c][d] = new T[ntot];
             my_ntot += ntot;
           }
         }
@@ -705,7 +708,7 @@ void structure::load(const char *filename) {
               while (sus) {
                 size_t count = chunks[i]->gv.ntot();
                 if (sus->sigma[c][d]) { delete[] sus->sigma[c][d]; }
-                sus->sigma[c][d] = new realnum[count];
+                sus->sigma[c][d] = new T[count];
                 sus->trivial_sigma[c][d] = false;
                 file.read_chunk(rank, &start, &count, sus->sigma[c][d]);
                 sus = sus->next;

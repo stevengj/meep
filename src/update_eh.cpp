@@ -38,6 +38,7 @@ bool fields_chunk::needs_W_prev(component c) const {
   return false;
 }
 
+template <class T>
 bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
   bool allocated_eh = false;
@@ -61,7 +62,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
           need_fmp = need_fmp || p->s->needs_P(ec, cmp, f);
       }
       if (need_fmp) {
-        if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new realnum[gv.ntot()];
+        if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new T[gv.ntot()];
       }
       else if (f_minus_p[dc][cmp]) { // remove unneeded f_minus_p
         delete[] f_minus_p[dc][cmp];
@@ -88,8 +89,8 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
   FOR_FT_COMPONENTS(ft, ec) if (f[ec][0]) {
     component dc = field_type_component(ft2, ec);
     DOCMP if (f_minus_p[dc][cmp]) {
-      realnum *fmp = f_minus_p[dc][cmp];
-      memcpy(fmp, f[dc][cmp], sizeof(realnum) * ntot);
+      T *fmp = f_minus_p[dc][cmp];
+      memcpy(fmp, f[dc][cmp], sizeof(T) * ntot);
     }
   }
 
@@ -114,7 +115,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
   //////////////////////////////////////////////////////////////////////////
   // Finally, compute E = chi1inv * D
 
-  realnum *dmp[NUM_FIELD_COMPONENTS][2];
+  T *dmp[NUM_FIELD_COMPONENTS][2];
   FOR_FT_COMPONENTS(ft2, dc) DOCMP2 {
     dmp[dc][cmp] = f_minus_p[dc][cmp] ? f_minus_p[dc][cmp] : f[dc][cmp];
   }
@@ -138,15 +139,15 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
       // lazily allocate any E/H fields that are needed (H==B initially)
       if (f[ec][cmp] == f[dc][cmp] &&
           (s->chi1inv[ec][d_ec] || have_f_minus_p || dsigw != NO_DIRECTION)) {
-        f[ec][cmp] = new realnum[gv.ntot()];
-        memcpy(f[ec][cmp], f[dc][cmp], gv.ntot() * sizeof(realnum));
+        f[ec][cmp] = new T[gv.ntot()];
+        memcpy(f[ec][cmp], f[dc][cmp], gv.ntot() * sizeof(T));
         allocated_eh = true;
       }
 
       // lazily allocate W auxiliary field
       if (!f_w[ec][cmp] && dsigw != NO_DIRECTION) {
-        f_w[ec][cmp] = new realnum[gv.ntot()];
-        memcpy(f_w[ec][cmp], f[ec][cmp], gv.ntot() * sizeof(realnum));
+        f_w[ec][cmp] = new T[gv.ntot()];
+        memcpy(f_w[ec][cmp], f[ec][cmp], gv.ntot() * sizeof(T));
         if (needs_W_notowned(ec)) allocated_eh = true; // communication needed
       }
 
@@ -155,9 +156,9 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
 
       // save W field from this timestep in f_w_prev if needed by pols
       if (needs_W_prev(ec)) {
-        if (!f_w_prev[ec][cmp]) f_w_prev[ec][cmp] = new realnum[gv.ntot()];
+        if (!f_w_prev[ec][cmp]) f_w_prev[ec][cmp] = new T[gv.ntot()];
         memcpy(f_w_prev[ec][cmp], f_w[ec][cmp] ? f_w[ec][cmp] : f[ec][cmp],
-               sizeof(realnum) * gv.ntot());
+               sizeof(T) * gv.ntot());
       }
 
       if (f[ec][cmp] != f[dc][cmp])
@@ -180,9 +181,9 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
         const int yee_idx = gv.yee_index(ec);
         const int d_ec = component_direction(ec);
         const int sR = gv.stride(R), nZ = gv.num_direction(Z);
-        realnum *E = f[ec][cmp];
-        const realnum *D = f_minus_p[dc][cmp] ? f_minus_p[dc][cmp] : f[dc][cmp];
-        const realnum *chi1inv = s->chi1inv[ec][d_ec];
+        T *E = f[ec][cmp];
+        const T *D = f_minus_p[dc][cmp] ? f_minus_p[dc][cmp] : f[dc][cmp];
+        const T *chi1inv = s->chi1inv[ec][d_ec];
         if (chi1inv)
           for (int iZ = 0; iZ < nZ; iZ++) {
             const int i = yee_idx + iZ - sR;

@@ -49,6 +49,7 @@ struct integrate_data {
   void *integrand_data_;
 };
 
+template <class T>
 static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec ie,
                                 vec s0, vec s1, vec e0, vec e1, double dV0, double dV1, ivec shift,
                                 complex<double> shift_phase, const symmetry &S, int sn,
@@ -103,7 +104,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid, i
       if (cS[i] == Dielectric) {
         double tr = 0.0;
         for (int k = 0; k < data->ninveps; ++k) {
-          const realnum *ie = fc->s->chi1inv[iecs[k]][ieds[k]];
+          const T *ie = fc->s->chi1inv[iecs[k]][ieds[k]];
           if (ie)
             tr += (ie[idx] + ie[idx + ieos[2 * k]] + ie[idx + ieos[1 + 2 * k]] +
                    ie[idx + ieos[2 * k] + ieos[1 + 2 * k]]);
@@ -115,7 +116,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid, i
       else if (cS[i] == Permeability) {
         double tr = 0.0;
         for (int k = 0; k < data->ninvmu; ++k) {
-          const realnum *im = fc->s->chi1inv[imcs[k]][imds[k]];
+          const T *im = fc->s->chi1inv[imcs[k]][imds[k]];
           if (im)
             tr += (im[idx] + im[idx + imos[2 * k]] + im[idx + imos[1 + 2 * k]] +
                    im[idx + imos[2 * k] + imos[1 + 2 * k]]);
@@ -142,7 +143,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid, i
       if (cS[i] == Dielectric) {
         double tr = 0.0;
         for (int k = 0; k < data->ninveps; ++k) {
-          const realnum *ie = fc2->s->chi1inv[iecs[k]][ieds[k]];
+          const T *ie = fc2->s->chi1inv[iecs[k]][ieds[k]];
           if (ie)
             tr += (ie[idx] + ie[idx + ieos[2 * k]] + ie[idx + ieos[1 + 2 * k]] +
                    ie[idx + ieos[2 * k] + ieos[1 + 2 * k]]);
@@ -154,7 +155,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid, i
       else if (cS[i] == Permeability) {
         double tr = 0.0;
         for (int k = 0; k < data->ninvmu; ++k) {
-          const realnum *im = fc2->s->chi1inv[imcs[k]][imds[k]];
+          const T *im = fc2->s->chi1inv[imcs[k]][imds[k]];
           if (im)
             tr += (im[idx] + im[idx + imos[2 * k]] + im[idx + imos[1 + 2 * k]] +
                    im[idx + imos[2 * k] + imos[1 + 2 * k]]);

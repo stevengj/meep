@@ -90,42 +90,48 @@ symmetry r_to_minus_r_symmetry(int m);
 
 // functions in step_generic.cpp:
 
-void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2,
+template <class T>
+void step_curl(T *f, component c, const T *g1, const T *g2,
                ptrdiff_t s1, ptrdiff_t s2, // strides for g1/g2 shift
-               const grid_volume &gv, realnum dtdx, direction dsig, const realnum *sig,
-               const realnum *kap, const realnum *siginv, realnum *fu, direction dsigu,
-               const realnum *sigu, const realnum *kapu, const realnum *siginvu, realnum dt,
-               const realnum *cnd, const realnum *cndinv, realnum *fcnd);
+               const grid_volume &gv, T dtdx, direction dsig, const T *sig,
+               const T *kap, const T *siginv, T *fu, direction dsigu,
+               const T *sigu, const T *kapu, const T *siginvu, T dt,
+               const T *cnd, const T *cndinv, T *fcnd);
 
-void step_update_EDHB(realnum *f, component fc, const grid_volume &gv, const realnum *g,
-                      const realnum *g1, const realnum *g2, const realnum *u, const realnum *u1,
-                      const realnum *u2, ptrdiff_t s, ptrdiff_t s1, ptrdiff_t s2,
-                      const realnum *chi2, const realnum *chi3, realnum *fw, direction dsigw,
-                      const realnum *sigw, const realnum *kapw);
+template <class T>
+void step_update_EDHB(T *f, component fc, const grid_volume &gv, const T *g,
+                      const T *g1, const T *g2, const T *u, const T *u1,
+                      const T *u2, ptrdiff_t s, ptrdiff_t s1, ptrdiff_t s2,
+                      const T *chi2, const T *chi3, T *fw, direction dsigw,
+                      const T *sigw, const T *kapw);
 
-void step_beta(realnum *f, component c, const realnum *g, const grid_volume &gv, realnum betadt,
-               direction dsig, const realnum *siginv, realnum *fu, direction dsigu,
-               const realnum *siginvu, const realnum *cndinv, realnum *fcnd);
+template <class T>
+void step_beta(T *f, component c, const T *g, const grid_volume &gv, T betadt,
+               direction dsig, const T *siginv, T *fu, direction dsigu,
+               const T *siginvu, const T *cndinv, T *fcnd);
 
 // functions in step_generic_stride1.cpp, generated from step_generic.cpp:
 
-void step_curl_stride1(realnum *f, component c, const realnum *g1, const realnum *g2,
+template <class T>
+void step_curl_stride1(T *f, component c, const T *g1, const T *g2,
                        ptrdiff_t s1, ptrdiff_t s2, // strides for g1/g2 shift
-                       const grid_volume &gv, realnum dtdx, direction dsig, const realnum *sig,
-                       const realnum *kap, const realnum *siginv, realnum *fu, direction dsigu,
-                       const realnum *sigu, const realnum *kapu, const realnum *siginvu, realnum dt,
-                       const realnum *cnd, const realnum *cndinv, realnum *fcnd);
+                       const grid_volume &gv, T dtdx, direction dsig, const T *sig,
+                       const T *kap, const T *siginv, T *fu, direction dsigu,
+                       const T *sigu, const T *kapu, const T *siginvu, T dt,
+                       const T *cnd, const T *cndinv, T *fcnd);
 
-void step_update_EDHB_stride1(realnum *f, component fc, const grid_volume &gv, const realnum *g,
-                              const realnum *g1, const realnum *g2, const realnum *u,
-                              const realnum *u1, const realnum *u2, ptrdiff_t s, ptrdiff_t s1,
-                              ptrdiff_t s2, const realnum *chi2, const realnum *chi3, realnum *fw,
-                              direction dsigw, const realnum *sigw, const realnum *kapw);
+template <class T>
+void step_update_EDHB_stride1(T *f, component fc, const grid_volume &gv, const T *g,
+                              const T *g1, const T *g2, const T *u,
+                              const T *u1, const T *u2, ptrdiff_t s, ptrdiff_t s1,
+                              ptrdiff_t s2, const T *chi2, const T *chi3, T *fw,
+                              direction dsigw, const T *sigw, const T *kapw);
 
-void step_beta_stride1(realnum *f, component c, const realnum *g, const grid_volume &gv,
-                       realnum betadt, direction dsig, const realnum *siginv, realnum *fu,
-                       direction dsigu, const realnum *siginvu, const realnum *cndinv,
-                       realnum *fcnd);
+template <class T>
+void step_beta_stride1(T *f, component c, const T *g, const grid_volume &gv,
+                       T betadt, direction dsig, const T *siginv, T *fu,
+                       direction dsigu, const T *siginvu, const T *cndinv,
+                       T *fcnd);
 
 /* macro wrappers around time-stepping functions: for performance reasons,
    if the inner loop is stride-1 then we use the stride-1 versions,

@@ -1572,6 +1572,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
 }
 
 /* make multilevel_susceptibility from python input data */
+template <class TT>
 static meep::susceptibility *make_multilevel_sus(const susceptibility_struct *d) {
   if (!d || d->transitions.size() == 0) return NULL;
 
@@ -1594,8 +1595,8 @@ static meep::susceptibility *make_multilevel_sus(const susceptibility_struct *d)
   if (T == 0) return NULL; // don't bother if there is no radiative coupling
 
   // non-radiative transition-rate matrix Gamma
-  meep::realnum *Gamma = new meep::realnum[L * L];
-  memset(Gamma, 0, sizeof(meep::realnum) * (L * L));
+  meep::TT *Gamma = new meep::TT[L * L];
+  memset(Gamma, 0, sizeof(meep::TT) * (L * L));
   for (size_t t = 0; t < d->transitions.size(); ++t) {
     int i = d->transitions[t].from_level - minlev;
     int j = d->transitions[t].to_level - minlev;
@@ -1604,16 +1605,16 @@ static meep::susceptibility *make_multilevel_sus(const susceptibility_struct *d)
   }
 
   // initial populations of each level
-  meep::realnum *N0 = new meep::realnum[L];
-  memset(N0, 0, sizeof(meep::realnum) * L);
+  meep::TT *N0 = new meep::TT[L];
+  memset(N0, 0, sizeof(meep::TT) * L);
   for (size_t p = 0; p < d->initial_populations.size() && p < L; ++p)
     N0[p] = d->initial_populations[p];
 
-  meep::realnum *alpha = new meep::realnum[L * T];
-  memset(alpha, 0, sizeof(meep::realnum) * (L * T));
-  meep::realnum *omega = new meep::realnum[T];
-  meep::realnum *gamma = new meep::realnum[T];
-  meep::realnum *sigmat = new meep::realnum[T * 5];
+  meep::TT *alpha = new meep::TT[L * T];
+  memset(alpha, 0, sizeof(meep::TT) * (L * T));
+  meep::TT *omega = new meep::TT[T];
+  meep::TT *gamma = new meep::TT[T];
+  meep::TT *sigmat = new meep::TT[T * 5];
 
   const double pi = 3.14159265358979323846264338327950288; // need pi below.
 
