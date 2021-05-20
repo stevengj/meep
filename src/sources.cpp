@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <complex>
+#include <assert.h>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -161,6 +162,7 @@ src_vol::src_vol(component cc, src_time *st, size_t n, ptrdiff_t *ind, complex<d
   npts = n;
   index = ind;
   A = amps;
+  needs_boundary_fix = false;
 }
 
 src_vol::src_vol(const src_vol &sv) {
@@ -304,7 +306,13 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
   fc->sources[ft] = tmp->add_to(fc->sources[ft]);
 }
 
-void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr){
+void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr, bool needs_boundary_fix){
+  if (n == 0) {
+      n = cur_data.idx_arr.size();
+      assert(amp_arr == NULL);
+      amp_arr = cur_data.amp_arr.data();
+  }
+  assert(n == cur_data.idx_arr.size());
   sources = src->add_to(sources, &src);
   ptrdiff_t* index_arr = new ptrdiff_t[n];
   std::complex<double>* amp_arr_copy = new std::complex<double>[n];
@@ -314,6 +322,7 @@ void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, st
   }
   component c = cur_data.near_fd_comp;
   src_vol *tmp = new src_vol(c, src, n, index_arr, amp_arr_copy);
+  tmp->needs_boundary_fix = needs_boundary_fix;
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
   if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks) abort("fields chunk index out of range");
   fields_chunk *fc = chunks[cur_data.fc_idx];
@@ -360,6 +369,23 @@ complex<double> amp_file_func(const vec &p) {
   res.imag(linear_interpolate(rx, ry, rz, amp_func_data_im, amp_file_dims[0], amp_file_dims[1],
                               amp_file_dims[2], 1));
   return res;
+}
+
+void fields::register_src_time(src_time *src) {
+  sources = src->add_to(sources, &src);
+  if (src->id == 0) { // doesn't have an ID yet
+    size_t max_id = 0;
+    for (src_time *s = sources; s; s = s->next)
+      max_id = s->id > max_id ? s->id : max_id;
+    src->id = max_id + 1;
+  }
+}
+
+src_time *fields::lookup_src_time(size_t id) {
+  if (id == 0) abort("bug: cannot lookup unregistered source");
+  for (src_time *s = sources; s; s = s->next)
+    if (s->id == id) return s;
+  return NULL;
 }
 
 void fields::add_volume_source(component c, const src_time &src, const volume &where_,

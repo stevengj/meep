@@ -68,6 +68,7 @@ public:
   size_t npts;             // number of points in list
   component c;             // field component the source applies to
   std::complex<double> *A; // list of amplitudes
+  bool needs_boundary_fix; // whether fix_boundary_sources needs calling
 
   std::complex<double> dipole(size_t j) { return A[j] * t->dipole(); }
   std::complex<double> current(size_t j) { return A[j] * t->current(); }
