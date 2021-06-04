@@ -484,7 +484,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   // which we automatically pick if kmatch == 0.
   if (match_frequency && kmatch == 0) {
     vec cen = eig_vol.center();
-    kmatch = frequency * sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
+    kmatch = copysign(frequency * sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency))), _kpoint.in_direction(d));
     if (d == NO_DIRECTION) {
       for (int i = 0; i < 3; ++i)
         k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis
@@ -829,6 +829,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   //         electric current K = nHat \times H                   */
   //         magnetic current N = -nHat \times E                  */
   /*--------------------------------------------------------------*/
+  if (global_eigenmode_data->group_velocity < 0)
+    amp *= -1; // equivalent to flipping the direction of nhat.
   if (is_D(c0)) c0 = direction_component(Ex, component_direction(c0));
   if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
   component cE[3] = {Ex, Ey, Ez}, cH[3] = {Hx, Hy, Hz};
