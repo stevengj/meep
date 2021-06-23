@@ -53,7 +53,7 @@ However, there is an alternative strategy for parallelization. If you have many 
 
 The `divide_parallel_processes` feature can be useful for large supercomputers which typically restrict the total number of jobs that can be executed but do not restrict the size of each job, or for large-scale optimization where many separate simulations are coupled by an optimization algorithm. Note that when using this feature using the [Python interface](Python_User_Interface.md), only the output of the subgroup belonging to the master process of the entire simulation is shown in the standard output. (In C++, the master process from *every* subgroup prints to standard output.)
 
-Meep also supports [thread-level parallelism](https://en.wikipedia.org/wiki/Task_parallelism) (i.e., multi-threading) on a single, shared-memory, multi-core machine for multi-frequency [near-to-far field](Python_User_Interface.md#near-to-far-field-spectra) computations. Meep does not currently use thread-level parallelism for the time stepping although this feature may be added in the future (see [Issue \#228](https://github.com/NanoComp/meep/issues/228)). 
+Meep also supports [thread-level parallelism](https://en.wikipedia.org/wiki/Task_parallelism) (i.e., multi-threading) on a single, shared-memory, multi-core machine for multi-frequency [near-to-far field](Python_User_Interface.md#near-to-far-field-spectra) computations. Meep does not currently use thread-level parallelism for the time stepping although this feature may be added in the future (see [Issue \#228](https://github.com/NanoComp/meep/issues/228)).
 
 ### Optimization Studies of Parallel Simulations
 

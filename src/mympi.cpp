@@ -32,6 +32,10 @@
 #include <mpi.h>
 #endif
 
+#ifdef _OPENMP
+#include "omp.h"
+#endif
+
 #ifdef IGNORE_SIGFPE
 #include <signal.h>
 #endif
@@ -104,6 +108,8 @@ initialize::~initialize() {
 double wall_time(void) {
 #ifdef HAVE_MPI
   return MPI_Wtime();
+#elif defined(_OPENMP)
+  return omp_get_wtime();
 #elif HAVE_GETTIMEOFDAY
   struct timeval tv;
   gettimeofday(&tv, 0);

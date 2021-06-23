@@ -103,6 +103,7 @@ tests/pw-source-ll
 tests/ring-ll
 tests/stress_tensor
 tests/symmetry
+tests/test_loop
 tests/three_d
 tests/two_dimensional
 tests/user-defined-material

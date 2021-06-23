@@ -2,6 +2,15 @@
 
 #include "meep_internals.hpp"
 
+#ifdef _OPENMP
+#include "omp.h"
+#endif
+
+/* This file contains routines to compute the "average" or "effective"
+   dielectric constant for a pixel, using an anisotropic averaging
+   procedure described in an upcoming paper (similar to the one in
+   MPB). */
+
 using namespace std;
 
 namespace meep {
@@ -226,7 +235,8 @@ breakout:
   double trivial_val[3] = {0, 0, 0};
   trivial_val[idiag] = 1.0;
   ivec shift1(unit_ivec(gv.dim, component_direction(c)) * (ft == E_stuff ? 1 : -1));
-  LOOP_OVER_VOL(gv, c, i) {
+  PLOOP_OVER_IVECS_C(gv, (gv).little_corner() + (gv).iyee_shift(c),                                   \
+                  (gv).big_corner() + (gv).iyee_shift(c), i, "omp parallel for collapse(3), firstprivate(last_output_time)") {
     double chi1invrow[3], chi1invrow_offdiag[3];
     IVEC_LOOP_ILOC(gv, here);
     medium.eff_chi1inv_row(c, chi1invrow, gv.dV(here, smoothing_diameter), tol, maxeval);
@@ -246,13 +256,14 @@ breakout:
     }
 
     if (verbosity > 0 && (ipixel + 1) % 1000 == 0 &&
-        wall_time() > last_output_time + MEEP_MIN_OUTPUT_TIME) {
+        wall_time() > last_output_time + MEEP_MIN_OUTPUT_TIME && (omp_get_thread_num() == 0)) {
       master_printf("%s is %g%% done, %g s remaining\n",
                     use_anisotropic_averaging ? "subpixel-averaging" : "grid initialization",
                     ipixel * 100.0 / npixels,
                     (npixels - ipixel) * (wall_time() - last_output_time) / ipixel);
       last_output_time = wall_time();
     }
+    #pragma omp atomic
     ++ipixel;
   }
   direction ds[3];
