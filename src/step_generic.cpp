@@ -4,7 +4,7 @@
 
 #define RPR realnum *restrict
 
-/* These macros get into the guts of the LOOP_OVER_VOL loops to
+/* These macros get into the guts of the PLOOP_OVER_VOL loops to
    efficiently construct the index k into a PML sigma array.
    Basically, k needs to increment by 2 for each increment of one of
    LOOP's for-loops, starting at the appropriate corner of the grid_volume,
@@ -86,25 +86,25 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       if (cnd) {
         realnum dt2 = dt * 0.5;
         if (g2) {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             f[i] = ((1 - dt2 * cnd[i]) * f[i] - dtdx * (g1[i + s1] - g1[i] + g2[i] - g2[i + s2])) *
                    cndinv[i];
           }
         }
         else {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             f[i] = ((1 - dt2 * cnd[i]) * f[i] - dtdx * (g1[i + s1] - g1[i])) * cndinv[i];
           }
         }
       }
       else { // no conductivity
         if (g2) {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             f[i] -= dtdx * (g1[i + s1] - g1[i] + g2[i] - g2[i + s2]);
           }
         }
         else {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) { f[i] -= dtdx * (g1[i + s1] - g1[i]); }
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) { f[i] -= dtdx * (g1[i + s1] - g1[i]); }
         }
       }
     }
@@ -113,7 +113,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       if (cnd) {
         realnum dt2 = dt * 0.5;
         if (g2) {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_ku;
             realnum fprev = fu[i];
             fu[i] =
@@ -123,7 +123,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
           }
         }
         else {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_ku;
             realnum fprev = fu[i];
             fu[i] = ((1 - dt2 * cnd[i]) * fprev - dtdx * (g1[i + s1] - g1[i])) * cndinv[i];
@@ -133,7 +133,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity
         if (g2) {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_ku;
             realnum fprev = fu[i];
             fu[i] -= dtdx * (g1[i + s1] - g1[i] + g2[i] - g2[i + s2]);
@@ -141,7 +141,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
           }
         }
         else {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_ku;
             realnum fprev = fu[i];
             fu[i] -= dtdx * (g1[i + s1] - g1[i]);
@@ -157,7 +157,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       if (cnd) {
         realnum dt2 = dt * 0.5;
         if (g2) {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             realnum fcnd_prev = fcnd[i];
             fcnd[i] =
@@ -167,7 +167,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
           }
         }
         else {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             realnum fcnd_prev = fcnd[i];
             fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - dtdx * (g1[i + s1] - g1[i])) * cndinv[i];
@@ -177,14 +177,14 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity (other than PML conductivity)
         if (g2) {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             f[i] = ((kap[k] - sig[k]) * f[i] - dtdx * (g1[i + s1] - g1[i] + g2[i] - g2[i + s2])) *
                    siginv[k];
           }
         }
         else {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             f[i] = ((kap[k] - sig[k]) * f[i] - dtdx * (g1[i + s1] - g1[i])) * siginv[k];
           }
@@ -197,7 +197,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
         realnum dt2 = dt * 0.5;
         if (g2) {
           //////////////////// MOST GENERAL CASE //////////////////////
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             DEF_ku;
             realnum fprev = fu[i];
@@ -211,7 +211,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
           /////////////////////////////////////////////////////////////
         }
         else {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             DEF_ku;
             realnum fprev = fu[i];
@@ -224,7 +224,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity (other than PML conductivity)
         if (g2) {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             DEF_ku;
             realnum fprev = fu[i];
@@ -234,7 +234,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
           }
         }
         else {
-          LOOP_OVER_VOL_OWNED0(gv, c, i) {
+          PLOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             DEF_ku;
             realnum fprev = fu[i];
@@ -261,7 +261,7 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, realnum b
       KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cndinv) { // conductivity + PML
         //////////////////// MOST GENERAL CASE //////////////////////
-        LOOP_OVER_VOL_OWNED0(gv, c, i) {
+        PLOOP_OVER_VOL_OWNED0(gv, c, i) {
           DEF_k;
           DEF_ku;
           realnum df;
@@ -273,7 +273,7 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, realnum b
         /////////////////////////////////////////////////////////////
       }
       else { // PML only
-        LOOP_OVER_VOL_OWNED0(gv, c, i) {
+        PLOOP_OVER_VOL_OWNED0(gv, c, i) {
           DEF_k;
           DEF_ku;
           realnum df;
@@ -284,7 +284,7 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, realnum b
     }
     else {          // PML in f, no fu
       if (cndinv) { // conductivity + PML
-        LOOP_OVER_VOL_OWNED0(gv, c, i) {
+        PLOOP_OVER_VOL_OWNED0(gv, c, i) {
           DEF_k;
           realnum dfcnd = betadt * g[i] * cndinv[i];
           fcnd[i] += dfcnd;
@@ -292,7 +292,7 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, realnum b
         }
       }
       else { // PML only
-        LOOP_OVER_VOL_OWNED0(gv, c, i) {
+        PLOOP_OVER_VOL_OWNED0(gv, c, i) {
           DEF_k;
           f[i] += betadt * g[i] * siginv[k];
         }
@@ -303,7 +303,7 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, realnum b
     if (dsigu != NO_DIRECTION) { // fu, no PML in f
       KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cndinv) { // conductivity, no PML
-        LOOP_OVER_VOL_OWNED0(gv, c, i) {
+        PLOOP_OVER_VOL_OWNED0(gv, c, i) {
           DEF_ku;
           realnum df;
           fu[i] += (df = betadt * g[i] * cndinv[i]);
@@ -311,7 +311,7 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, realnum b
         }
       }
       else { // no conductivity or PML
-        LOOP_OVER_VOL_OWNED0(gv, c, i) {
+        PLOOP_OVER_VOL_OWNED0(gv, c, i) {
           DEF_ku;
           realnum df;
           fu[i] += (df = betadt * g[i]);
@@ -321,10 +321,10 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, realnum b
     }
     else {          // no PML, no fu
       if (cndinv) { // conductivity, no PML
-        LOOP_OVER_VOL_OWNED0(gv, c, i) { f[i] += betadt * g[i] * cndinv[i]; }
+        PLOOP_OVER_VOL_OWNED0(gv, c, i) { f[i] += betadt * g[i] * cndinv[i]; }
       }
       else { // no conductivity or PML
-        LOOP_OVER_VOL_OWNED0(gv, c, i) { f[i] += betadt * g[i]; }
+        PLOOP_OVER_VOL_OWNED0(gv, c, i) { f[i] += betadt * g[i]; }
       }
     }
   }
@@ -385,7 +385,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
         //////////////////// MOST GENERAL CASE //////////////////////
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           realnum g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
           realnum g2s = g2[i] + g2[i + s] + g2[i - s2] + g2[i + (s - s2)];
           realnum gs = g[i];
@@ -400,7 +400,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
         /////////////////////////////////////////////////////////////
       }
       else {
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           realnum gs = g[i];
           realnum us = u[i];
           DEF_kw;
@@ -412,7 +412,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
     }
     else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           realnum g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
           realnum gs = g[i];
           realnum us = u[i];
@@ -424,7 +424,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
         }
       }
       else {
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           realnum gs = g[i];
           realnum us = u[i];
           DEF_kw;
@@ -440,7 +440,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
     else { // diagonal u
       if (chi3) {
         if (g1 && g2) {
-          LOOP_OVER_VOL_OWNED(gv, fc, i) {
+          PLOOP_OVER_VOL_OWNED(gv, fc, i) {
             realnum g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
             realnum g2s = g2[i] + g2[i + s] + g2[i - s2] + g2[i + (s - s2)];
             realnum gs = g[i];
@@ -453,7 +453,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           }
         }
         else if (g1) {
-          LOOP_OVER_VOL_OWNED(gv, fc, i) {
+          PLOOP_OVER_VOL_OWNED(gv, fc, i) {
             realnum g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
             realnum gs = g[i];
             realnum us = u[i];
@@ -468,7 +468,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           abort("bug - didn't swap off-diagonal terms!?");
         }
         else {
-          LOOP_OVER_VOL_OWNED(gv, fc, i) {
+          PLOOP_OVER_VOL_OWNED(gv, fc, i) {
             realnum gs = g[i];
             realnum us = u[i];
             DEF_kw;
@@ -479,7 +479,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
         }
       }
       else if (u) {
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           realnum gs = g[i];
           realnum us = u[i];
           DEF_kw;
@@ -489,7 +489,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
         }
       }
       else {
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           DEF_kw;
           realnum fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
           fw[i] = g[i];
@@ -501,7 +501,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
   else {            /////////////// no PML (no fw) ///////////////////
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           realnum g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
           realnum g2s = g2[i] + g2[i + s] + g2[i - s2] + g2[i + (s - s2)];
           realnum gs = g[i];
@@ -512,7 +512,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
         }
       }
       else {
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           realnum gs = g[i];
           realnum us = u[i];
           f[i] = (gs * us + OFFDIAG(u1, g1, s1) + OFFDIAG(u2, g2, s2));
@@ -521,7 +521,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
     }
     else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           realnum g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
           realnum gs = g[i];
           realnum us = u[i];
@@ -530,7 +530,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
         }
       }
       else {
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           realnum gs = g[i];
           realnum us = u[i];
           f[i] = (gs * us + OFFDIAG(u1, g1, s1));
@@ -543,7 +543,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
     else { // diagonal u
       if (chi3) {
         if (g1 && g2) {
-          LOOP_OVER_VOL_OWNED(gv, fc, i) {
+          PLOOP_OVER_VOL_OWNED(gv, fc, i) {
             realnum g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
             realnum g2s = g2[i] + g2[i + s] + g2[i - s2] + g2[i + (s - s2)];
             realnum gs = g[i];
@@ -553,7 +553,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           }
         }
         else if (g1) {
-          LOOP_OVER_VOL_OWNED(gv, fc, i) {
+          PLOOP_OVER_VOL_OWNED(gv, fc, i) {
             realnum g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
             realnum gs = g[i];
             realnum us = u[i];
@@ -565,7 +565,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           abort("bug - didn't swap off-diagonal terms!?");
         }
         else {
-          LOOP_OVER_VOL_OWNED(gv, fc, i) {
+          PLOOP_OVER_VOL_OWNED(gv, fc, i) {
             realnum gs = g[i];
             realnum us = u[i];
             f[i] = (gs * us) * calc_nonlinear_u(gs * gs, gs, us, chi2[i], chi3[i]);
@@ -573,14 +573,14 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
         }
       }
       else if (u) {
-        LOOP_OVER_VOL_OWNED(gv, fc, i) {
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) {
           realnum gs = g[i];
           realnum us = u[i];
           f[i] = (gs * us);
         }
       }
       else
-        LOOP_OVER_VOL_OWNED(gv, fc, i) { f[i] = g[i]; }
+        PLOOP_OVER_VOL_OWNED(gv, fc, i) { f[i] = g[i]; }
     }
   }
 }

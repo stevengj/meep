@@ -101,6 +101,7 @@ void fields::step() {
 void fields::phase_material() {
   bool changed = false;
   if (is_phasing()) {
+    CHUNK_OPENMP
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->is_mine()) {
         chunks[i]->phase_material(phasein_time);

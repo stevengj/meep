@@ -32,6 +32,10 @@
 #include <mpi.h>
 #endif
 
+#ifdef _OPENMP
+#include "omp.h"
+#endif
+
 #ifdef IGNORE_SIGFPE
 #include <signal.h>
 #endif
@@ -75,7 +79,14 @@ int verbosity = 1; // defined in meep.h
 
 initialize::initialize(int &argc, char **&argv) {
 #ifdef HAVE_MPI
+#ifdef _OPENMP
+  int provided;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+  if (provided < MPI_THREAD_FUNNELED && omp_get_num_threads() > 1)
+      abort("MPI does not support multi-threaded execution");
+#else
   MPI_Init(&argc, &argv);
+#endif
   int major, minor;
   MPI_Get_version(&major, &minor);
   if (verbosity > 0)
@@ -104,6 +115,8 @@ initialize::~initialize() {
 double wall_time(void) {
 #ifdef HAVE_MPI
   return MPI_Wtime();
+#elif defined(_OPENMP)
+  return omp_get_wtime();
 #elif HAVE_GETTIMEOFDAY
   struct timeval tv;
   gettimeofday(&tv, 0);

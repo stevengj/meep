@@ -457,14 +457,14 @@ bool fields_chunk::alloc_f(component c) {
           component bc = direction_component(Bx, component_direction(c));
           if (!f[bc][cmp]) {
             f[bc][cmp] = new realnum[gv.ntot()];
-            for (size_t i = 0; i < gv.ntot(); i++)
+            PS1LOOP_OVER_VOL(gv, c, i)
               f[bc][cmp][i] = 0.0;
           }
           f[c][cmp] = f[bc][cmp];
         }
         else {
           f[c][cmp] = new realnum[gv.ntot()];
-          for (size_t i = 0; i < gv.ntot(); i++)
+          PS1LOOP_OVER_VOL(gv, c, i)
             f[c][cmp][i] = 0.0;
         }
       }
