@@ -204,7 +204,6 @@ a collapse over all three main loops. */
 // the most generic use case where the user
 // can specify a custom clause
 #define PLOOP_OVER_IVECS_C(gv, is, ie, idx, clause)			                                                     \
-_Pragma("unroll(1)") \
 for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                          \
                  loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
                  loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
@@ -222,7 +221,6 @@ _Pragma(clause)     				                                                     \
   for (ptrdiff_t loop_i1 = 0; loop_i1 < loop_n1; loop_i1++)                                        \
     for (ptrdiff_t loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                      \
       for (ptrdiff_t loop_i3 = 0; loop_i3 < loop_n3; loop_i3++)                                    \
-      _Pragma("unroll(1)") \
         for (ptrdiff_t idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2 +                            \
            loop_i3*loop_s3, dummy_last=0;dummy_last<1;dummy_last++)
 
@@ -316,7 +314,6 @@ We can use simd vectorization in addition
 to the usual par for optimization */
 // loop over indices idx from is to ie (inclusive) in gv
 #define PS1LOOP_OVER_IVECS(gv, is, ie, idx)                                                        \
-_Pragma("unroll(1)") \
 for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                          \
                  loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
                  loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
@@ -333,7 +330,6 @@ _Pragma("omp parallel for collapse(2)")				                                     
     for (ptrdiff_t loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                      \
       _Pragma("omp simd") \
       for (ptrdiff_t loop_i3 = 0; loop_i3 < loop_n3; loop_i3++)                                    \
-        _Pragma("unroll(1)") \
         for (ptrdiff_t idx = idx0 + loop_i1 * loop_s1 + loop_i2 * loop_s2 + loop_i3, dummy_last=0;dummy_last<1;dummy_last++)
 
 #define PS1LOOP_OVER_VOL(gv, c, idx)                                                                \
