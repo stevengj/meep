@@ -830,6 +830,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   //         magnetic current N = -nHat \times E                  */
   /*--------------------------------------------------------------*/
   if (global_eigenmode_data->group_velocity < 0)
+    master_printf("vg is negative!\n");
     amp *= -1; // equivalent to flipping the direction of nhat.
   if (is_D(c0)) c0 = direction_component(Ex, component_direction(c0));
   if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
