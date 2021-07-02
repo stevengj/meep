@@ -1108,6 +1108,16 @@
 (define (output-png+h5 c options) (output-png-rm? false c options))
 
 ; ****************************************************************
+; GDSII import functions
+
+(export-type (make-list-type 'integer))
+
+(define* (get-GDSII-prisms m GDSIIFile #:optional (layer -1) (zmin 0) (zmax 0))
+  (map (lambda (data)
+        (make prism (material m) (center auto-center) (vertices (car data)) (height (cadr data)) (axis (caddr data))))
+       (get-GDSII-prism-data GDSIIFile layer zmin zmax)))
+
+; ****************************************************************
 ; harminv functions for extracting bands, etcetera
 
  ; for do-harminv

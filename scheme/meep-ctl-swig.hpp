@@ -55,6 +55,10 @@ ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::fiel
 
 ctlio::cnumber_list make_casimir_g_kz(double T, double dt, double sigma, meep::field_type ft);
 
+ctlio::integer_list GDSII_layers(const char *fname);
+meep::volume GDSII_vol(const char *fname, int layer = -1, double zmin = 0, double zmax = 0);
+SCM get_GDSII_prism_data(const char *GDSIIFile, int Layer = -1, double zmin = 0.0, double zmax = 0.0);
+
 // wrapper around constructor to fool SWIG
 meep::volume_list *make_volume_list(const meep::volume &v, int c, std::complex<double> weight,
                                     meep::volume_list *next);
