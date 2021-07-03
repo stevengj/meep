@@ -13,6 +13,8 @@ from .filter_source import FilteredSource
 
 from .filters import *
 
+from .connectivity import *
+
 from . import utils
 
 try:
