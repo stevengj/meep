@@ -108,8 +108,8 @@ bool fields_chunk::step_db(field_type ft) {
               for (int iz = 0; iz <= gv_sub.nz(); ++iz) {
                 ptrdiff_t idx = ir * sr + iz;
                 f_rderiv_int[idx] =
-                    f_rderiv_int[idx - sr] +
-                    rinv * (f_p[idx] * (ir + ir0) - f_p[idx - sr] * ((ir - 1) + ir0));
+                  f_rderiv_int[idx - sr] +
+                  rinv * (f_p[idx] * (ir + ir0) - f_p[idx - sr] * ((ir - 1) + ir0));
               }
             }
             f_p = f_rderiv_int;
