@@ -214,7 +214,7 @@ fields_chunk::~fields_chunk() {
 }
 
 static void split_into_tiles(grid_volume gvol, std::vector<grid_volume> &result) {
-  const size_t base_nowned_min = 1000;
+  const size_t base_nowned_min = 1000000;
   if (gvol.nowned_min() < base_nowned_min) {
     result.push_back(gvol);
     return;
@@ -232,6 +232,25 @@ static void split_into_tiles(grid_volume gvol, std::vector<grid_volume> &result)
   return;
 }
 
+// First check that the tile volumes gvs do not intersect and that they add
+// up to the chunk's total grid_volume gv
+static void check_tiles(grid_volume gv, std::vector<grid_volume> gvs) {
+  grid_volume vol_intersection;
+  for (size_t i = 0; i < gvs.size(); i++)
+    for (size_t j = i + 1; j < gvs.size(); j++)
+      if (gvs[i].intersect_with(gvs[j], &vol_intersection))
+        meep::abort("gvs[%zu] intersects with gvs[%zu]\n", i, j);
+  size_t sum = 0;
+  for (size_t i = 0; i < gvs.size(); i++) {
+    size_t grid_points = 1;
+    LOOP_OVER_DIRECTIONS(gvs[i].dim, d) { grid_points *= gvs[i].num_direction(d); }
+    sum += grid_points;
+  }
+  size_t v_grid_points = 1;
+  LOOP_OVER_DIRECTIONS(gv.dim, d) { v_grid_points *= gv.num_direction(d); }
+  if (sum != v_grid_points) meep::abort("v_grid_points = %zu, sum(chunks) = %zu\n", v_grid_points, sum);
+}
+
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, double beta,
                            bool zero_fields_near_cylorigin, int chunkidx)
     : gv(the_s->gv), v(the_s->v), m(m), zero_fields_near_cylorigin(zero_fields_near_cylorigin),
@@ -247,6 +266,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   dt = s->dt;
   dft_chunks = NULL;
   split_into_tiles(gv, gvs);
+  check_tiles(gv, gvs);
   FOR_FIELD_TYPES(ft) {
     polarization_state *cur = NULL;
     pol[ft] = NULL;
