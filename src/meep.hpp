@@ -1368,6 +1368,7 @@ public:
 
   double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
   grid_volume gv;
+  std::vector<grid_volume> gvs; // subregions for cache-tiled execution of step_curl
   volume v;
   double m;                        // angular dependence in cyl. coords
   bool zero_fields_near_cylorigin; // fields=0 m pixels near r=0 for stability

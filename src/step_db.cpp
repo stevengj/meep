@@ -44,40 +44,43 @@ bool fields_chunk::step_db(field_type ft) {
 
   if (ft != B_stuff && ft != D_stuff) meep::abort("bug - step_db should only be called for B or D");
 
-  DOCMP FOR_FT_COMPONENTS(ft, cc) {
-    if (f[cc][cmp]) {
-      const component c_p = plus_component[cc], c_m = minus_component[cc];
-      const direction d_deriv_p = plus_deriv_direction[cc];
-      const direction d_deriv_m = minus_deriv_direction[cc];
-      const direction d_c = component_direction(cc);
-      const bool have_p = have_plus_deriv[cc];
-      const bool have_m = have_minus_deriv[cc];
-      const direction dsig0 = cycle_direction(gv.dim, d_c, 1);
-      const direction dsig = s->sigsize[dsig0] > 1 ? dsig0 : NO_DIRECTION;
-      const direction dsigu0 = cycle_direction(gv.dim, d_c, 2);
-      const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
-      ptrdiff_t stride_p = have_p ? gv.stride(d_deriv_p) : 0;
-      ptrdiff_t stride_m = have_m ? gv.stride(d_deriv_m) : 0;
-      realnum *f_p = have_p ? f[c_p][cmp] : NULL;
-      realnum *f_m = have_m ? f[c_m][cmp] : NULL;
-      realnum *the_f = f[cc][cmp];
+  for (size_t i = 0; i < gvs.size(); ++i) {
+    grid_volume gv_sub = gvs[i];
 
-      if (dsig != NO_DIRECTION && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
-        f_cond[cc][cmp] = new realnum[gv.ntot()];
-        memset(f_cond[cc][cmp], 0, sizeof(realnum) * gv.ntot());
-      }
-      if (dsigu != NO_DIRECTION && !f_u[cc][cmp]) {
-        f_u[cc][cmp] = new realnum[gv.ntot()];
-        memcpy(f_u[cc][cmp], the_f, gv.ntot() * sizeof(realnum));
-        allocated_u = true;
-      }
+    DOCMP FOR_FT_COMPONENTS(ft, cc) {
+      if (f[cc][cmp]) {
+        const component c_p = plus_component[cc], c_m = minus_component[cc];
+        const direction d_deriv_p = plus_deriv_direction[cc];
+        const direction d_deriv_m = minus_deriv_direction[cc];
+        const direction d_c = component_direction(cc);
+        const bool have_p = have_plus_deriv[cc];
+        const bool have_m = have_minus_deriv[cc];
+        const direction dsig0 = cycle_direction(gv_sub.dim, d_c, 1);
+        const direction dsig = s->sigsize[dsig0] > 1 ? dsig0 : NO_DIRECTION;
+        const direction dsigu0 = cycle_direction(gv_sub.dim, d_c, 2);
+        const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
+        ptrdiff_t stride_p = have_p ? gv_sub.stride(d_deriv_p) : 0;
+        ptrdiff_t stride_m = have_m ? gv_sub.stride(d_deriv_m) : 0;
+        realnum *f_p = have_p ? f[c_p][cmp] : NULL;
+        realnum *f_m = have_m ? f[c_m][cmp] : NULL;
+        realnum *the_f = f[cc][cmp];
 
-      if (ft == D_stuff) { // strides are opposite sign for H curl
-        stride_p = -stride_p;
-        stride_m = -stride_m;
-      }
+        if (dsig != NO_DIRECTION && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
+          f_cond[cc][cmp] = new realnum[gv_sub.ntot()];
+          memset(f_cond[cc][cmp], 0, sizeof(realnum) * gv_sub.ntot());
+        }
+        if (dsigu != NO_DIRECTION && !f_u[cc][cmp]) {
+          f_u[cc][cmp] = new realnum[gv_sub.ntot()];
+          memcpy(f_u[cc][cmp], the_f, gv_sub.ntot() * sizeof(realnum));
+          allocated_u = true;
+        }
 
-      if (gv.dim == Dcyl) switch (d_c) {
+        if (ft == D_stuff) { // strides are opposite sign for H curl
+          stride_p = -stride_p;
+          stride_m = -stride_m;
+        }
+
+        if (gv_sub.dim == Dcyl) switch (d_c) {
           case R:
             f_p = NULL; // im/r Fz term will be handled separately
             break;
@@ -95,14 +98,14 @@ bool fields_chunk::step_db(field_type ft) {
                and get the correct derivative.  (More precisely,
                the derivative and integral are replaced by differences
                and sums, but you get the idea). */
-            if (!f_rderiv_int) f_rderiv_int = new realnum[gv.ntot()];
-            realnum ir0 = gv.origin_r() * gv.a + 0.5 * gv.iyee_shift(c_p).in_direction(R);
-            for (int iz = 0; iz <= gv.nz(); ++iz)
+            if (!f_rderiv_int) f_rderiv_int = new realnum[gv_sub.ntot()];
+            realnum ir0 = gv_sub.origin_r() * gv_sub.a + 0.5 * gv_sub.iyee_shift(c_p).in_direction(R);
+            for (int iz = 0; iz <= gv_sub.nz(); ++iz)
               f_rderiv_int[iz] = 0;
-            int sr = gv.nz() + 1;
-            for (int ir = 1; ir <= gv.nr(); ++ir) {
+            int sr = gv_sub.nz() + 1;
+            for (int ir = 1; ir <= gv_sub.nr(); ++ir) {
               realnum rinv = 1.0 / ((ir + ir0) - 0.5);
-              for (int iz = 0; iz <= gv.nz(); ++iz) {
+              for (int iz = 0; iz <= gv_sub.nz(); ++iz) {
                 ptrdiff_t idx = ir * sr + iz;
                 f_rderiv_int[idx] =
                     f_rderiv_int[idx - sr] +
@@ -113,14 +116,15 @@ bool fields_chunk::step_db(field_type ft) {
             break;
           }
           default: meep::abort("bug - non-cylindrical field component in Dcyl");
-        }
+          }
 
-      STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m,
-                gv, gv.little_owned_corner0(cc), gv.big_corner(),
-                Courant, dsig, s->sig[dsig],
-                s->kap[dsig], s->siginv[dsig], f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu],
-                s->siginv[dsigu], dt, s->conductivity[cc][d_c], s->condinv[cc][d_c],
-                f_cond[cc][cmp]);
+        STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m,
+                  gv_sub, gv_sub.little_owned_corner0(cc), gv_sub.big_corner(),
+                  Courant, dsig, s->sig[dsig],
+                  s->kap[dsig], s->siginv[dsig], f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu],
+                  s->siginv[dsigu], dt, s->conductivity[cc][d_c], s->condinv[cc][d_c],
+                  f_cond[cc][cmp]);
+      }
     }
   }
 
