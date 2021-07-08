@@ -147,8 +147,12 @@ The first steps are:
 
 ```sh
 brew doctor
-brew install homebrew/science/hdf5 homebrew/science/openblas guile fftw h5utils
+brew install hdf5 
+brew install openblas 
+brew install guile
+brew install fftw
 ```
+
 
 Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md) and, in the `harminv` directory, do:
 
@@ -157,6 +161,8 @@ Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [
 ```
 
 Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).
+
+Download and install H5utilds: https://github.com/NanoComp/h5utils/blob/master/README.md
 
 You are done, and can now run Meep (Scheme interface) just by typing `meep`. You can run `make check` in the meep directory if you want to perform a self-test.
 
