@@ -225,7 +225,7 @@ void dft_chunk::update_dft(double time) {
   int numcmp = fc->f[c][1] ? 2 : 1;
 
   PLOOP_OVER_IVECS(fc->gv, is, ie, idx) {
-    size_t idx_dft = (loop_i1 * loop_n2 + loop_i2) * loop_n3 + loop_i3;
+    size_t idx_dft = IVEC_LOOP_COUNTER;
     double w;
     if (include_dV_and_interp_weights) {
       w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);

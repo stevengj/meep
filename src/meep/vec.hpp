@@ -382,6 +382,9 @@ _Pragma("omp parallel for collapse(2)")				                                     
   (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 3) *                                                          \
    (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 2) * ((dV)*IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 1))))
 
+// equivalent to incrementing a counter, starting from 0, in the loop body
+#define IVEC_LOOP_COUNTER ((loop_i1 * loop_n2 + loop_i2) * loop_n3 + loop_i3)
+
 inline signed_direction flip(signed_direction d) {
   signed_direction d2 = d;
   d2.flipped = !d.flipped;
