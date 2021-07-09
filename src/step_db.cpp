@@ -115,9 +115,9 @@ bool fields_chunk::step_db(field_type ft) {
           default: meep::abort("bug - non-cylindrical field component in Dcyl");
         }
 
-      for (size_t i = 0; i < gvs.size(); ++i) {
+      for (const auto& sub_gv : gvs) {
         STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m,
-                  gvs[i], gvs[i].little_owned_corner0(cc), gvs[i].big_corner(),
+                  gv, sub_gv.little_owned_corner0(cc), sub_gv.big_corner(),
                   Courant, dsig, s->sig[dsig],
                   s->kap[dsig], s->siginv[dsig], f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu],
                   s->siginv[dsigu], dt, s->conductivity[cc][d_c], s->condinv[cc][d_c],
