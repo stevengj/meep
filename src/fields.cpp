@@ -214,7 +214,7 @@ fields_chunk::~fields_chunk() {
 }
 
 static void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result) {
-  const size_t base_nowned_min = 20000;
+  const size_t base_nowned_min = 12000;
   if (gvol.nowned_min() < base_nowned_min) {
     result->push_back(gvol);
     return;
