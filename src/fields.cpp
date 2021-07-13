@@ -241,14 +241,10 @@ static void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
       if (gvs[i].intersect_with(gvs[j], &vol_intersection))
         meep::abort("gvs[%zu] intersects with gvs[%zu]\n", i, j);
   size_t sum = 0;
-  for (const auto& sub_gv : gvs) {
-    size_t grid_points = 1;
-    LOOP_OVER_DIRECTIONS(sub_gv.dim, d) { grid_points *= sub_gv.num_direction(d); }
-    sum += grid_points;
-  }
+  for (const auto& sub_gv : gvs) { sum += sub_gv.nowned_min(); }
   size_t v_grid_points = 1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) { v_grid_points *= gv.num_direction(d); }
-  if (sum != v_grid_points) meep::abort("v_grid_points = %zu, sum(chunks) = %zu\n", v_grid_points, sum);
+  if (sum != v_grid_points) meep::abort("v_grid_points = %zu, sum(tiles) = %zu\n", v_grid_points, sum);
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, double beta,
