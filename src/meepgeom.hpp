@@ -183,8 +183,6 @@ bool is_material_grid(material_type mt);
 bool is_material_grid(void *md);
 bool is_variable(material_type mt);
 bool is_variable(void *md);
-bool is_file(material_type md);
-bool is_file(void *md);
 bool is_medium(material_type md, medium_struct **m);
 bool is_medium(void *md, medium_struct **m);
 bool is_metal(meep::field_type ft, const material_type *material);

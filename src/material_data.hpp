@@ -122,6 +122,9 @@ struct material_data {
   // these fields used only if which_subclass==MATERIAL_USER
   user_material_func user_func;
   void *user_data;
+
+  // used for any variable material (USER, FILE, or GRID):
+  // indicates whether we should use the fallback subpixel averaging via quadrature
   bool do_averaging;
 
   // these fields used only if which_subclass==MATERIAL_FILE

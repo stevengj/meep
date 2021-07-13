@@ -357,12 +357,9 @@ int mode_solver::mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv
 
   bool o1_is_var = o1 && meep_geom::is_variable(o1->material);
   bool o2_is_var = o2 && meep_geom::is_variable(o2->material);
-  bool default_is_var_or_file =
-      meep_geom::is_variable(default_material) || meep_geom::is_file(default_material);
+  bool default_is_var = meep_geom::is_variable(default_material);
 
-  if (o1_is_var || o2_is_var ||
-      (default_is_var_or_file &&
-       (!o1 || !o2 || meep_geom::is_file(o1->material) || meep_geom::is_file(o2->material)))) {
+  if (o1_is_var || o2_is_var || (default_is_var && (!o1 || !o2))) {
     return 0; /* arbitrary material functions are non-analyzable */
   }
 
