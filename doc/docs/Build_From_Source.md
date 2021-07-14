@@ -188,8 +188,16 @@ sudo make install
 Assuming you've set your `LDFLAGS` etcetera, the configure script should find all of the libraries you've installed and, with luck, compile successfully. The `sudo` in the last command uses administrator privileges to install the binaries in standard system directories. Alternatively, you can just use `make install` if you have used `--prefix` to change the installation directory to something like your home directory. This is described below. To make sure Meep is working, you can run its test suite via:
 
 ```sh
-make check
+make check
 ```
+
+When running the test suite, the number of MPI processes is two and if OpenMP is enabled (as described further below) the number of threads is two. These default values can be overridden by passing `RUNCODE` to `make`, e.g.:
+
+```sh
+make RUNCODE="env OMP_NUM_THREADS=4 mpirun -np 3" check
+```
+
+If [`Coverage.py`](https://coverage.readthedocs.io/en/coverage-5.5/index.html) is found on your machine, the Python test suite is always run in serial mode (i.e., no MPI).
 
 Note: several of the unit tests generate output files which are written to disk. The C++ test suite in `meep/tests` outputs its files in the same subdirectory. The Python test suite in `meep/python/tests` outputs its files to a temporary system directory (i.e., /tmp, etc.).
 
