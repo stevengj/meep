@@ -14,13 +14,11 @@ ABC = ABCMeta('ABC', (object, ), {'__slots__':
 class Basis(ABC):
     """
     """
-    def __init__(
-            self,
-            rho_vector=None,
-            volume=None,
-            size=None,
-            center=mp.Vector3(),
-    ):
+    def __init__(self,
+                 rho_vector=None,
+                 volume=None,
+                 size=None,
+                 center=mp.Vector3()):
         self.volume = volume if volume else mp.Volume(center=center, size=size)
         self.rho_vector = rho_vector
 
@@ -54,6 +52,9 @@ class BilinearInterpolationBasis(Basis):
     Simple bilinear interpolation basis set.
     '''
     def __init__(self, resolution, symmetry=None, **kwargs):
+        ''' 
+        
+        '''
         self.dim = 2
 
         super(BilinearInterpolationBasis, self).__init__(**kwargs)
@@ -194,14 +195,8 @@ class BilinearInterpolationBasis(Basis):
 
         return weights, interp_idx
 
-    def gen_interpolation_matrix(
-        self,
-        rho_x,
-        rho_y,
-        rho_x_interp,
-        rho_y_interp,
-        rho_z_interp,
-    ):
+    def gen_interpolation_matrix(self, rho_x, rho_y, rho_x_interp,
+                                 rho_y_interp, rho_z_interp):
         '''
         Generates a bilinear interpolation matrix.
         

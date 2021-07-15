@@ -64,48 +64,46 @@ _reduce_fn = onp.max
 class MeepJaxWrapper:
     """Wraps a Meep simulation object into a JAX-differentiable callable.
 
-    Attributes:
-        simulation: the pre-configured Meep simulation object.
-        sources: a list of Meep sources for the forward simulation.
-        monitors: a list of eigenmode coefficient monitors from the `meep.adjoint`
-          module.
-        design_regions: a list of design regions from the `meep.adjoint` module.
-        frequencies: the list of frequencies, in normalized Meep units.
-        measurement_interval: the time interval between DFT field convergence
-          measurements, in Meep time units. The default value is 50.
-        dft_field_components: a list of Meep field components, such as `mp.Ex`,
-          `mp.Hy`, etc, whose DFT will be monitored for convergence to stop the
-          simulation. The default is `mp.Ez`.
-        dft_threshold: the threshold for DFT field convergence. Once the norm of the
-          change in the fields (the maximum over all design regions and field
-          components) is less than this value, the simulation will be stopped. The
-          default value is 1e-6.
-        minimum_run_time: the minimum run time of the simulation, in Meep time
-          units. The default value is 0.
-        maximum_run_time: the maximum run time of the simulation, in Meep time
-          units. The default value is infinity.
-        until_after_sources: whether `maximum_run_time` should be ignored until the
-          sources have turned off. This parameter specifies whether `until` or
-          `until_after_sources` is used. See
-          https://meep.readthedocs.io/en/latest/Python_User_Interface/#Simulation
+  Attributes:
+      simulation: the pre-configured Meep simulation object.
+      sources: a list of Meep sources for the forward simulation.
+      monitors: a list of eigenmode coefficient monitors from the `meep.adjoint`
+        module.
+      design_regions: a list of design regions from the `meep.adjoint` module.
+      frequencies: the list of frequencies, in normalized Meep units.
+      measurement_interval: the time interval between DFT field convergence
+        measurements, in Meep time units. The default value is 50.
+      dft_field_components: a list of Meep field components, such as `mp.Ex`,
+        `mp.Hy`, etc, whose DFT will be monitored for convergence to stop the
+        simulation. The default is `mp.Ez`.
+      dft_threshold: the threshold for DFT field convergence. Once the norm of the
+        change in the fields (the maximum over all design regions and field
+        components) is less than this value, the simulation will be stopped. The
+        default value is 1e-6.
+      minimum_run_time: the minimum run time of the simulation, in Meep time
+        units. The default value is 0.
+      maximum_run_time: the maximum run time of the simulation, in Meep time
+        units. The default value is infinity.
+      until_after_sources: whether `maximum_run_time` should be ignored until the
+        sources have turned off. This parameter specifies whether `until` or
+        `until_after_sources` is used. See
+        https://meep.readthedocs.io/en/latest/Python_User_Interface/#Simulation
           for more information. The default is true.
-    """
+  """
     _log_fn = print
 
-    def __init__(
-        self,
-        simulation: mp.Simulation,
-        sources: List[mp.Source],
-        monitors: List[EigenmodeCoefficient],
-        design_regions: List[DesignRegion],
-        frequencies: List[float],
-        measurement_interval: float = 50.0,
-        dft_field_components: Tuple[int, ...] = (mp.Ez, ),
-        dft_threshold: float = 1e-6,
-        minimum_run_time: float = 0,
-        maximum_run_time: float = onp.inf,
-        until_after_sources: bool = True,
-    ):
+    def __init__(self,
+                 simulation: mp.Simulation,
+                 sources: List[mp.Source],
+                 monitors: List[EigenmodeCoefficient],
+                 design_regions: List[DesignRegion],
+                 frequencies: List[float],
+                 measurement_interval: float = 50.0,
+                 dft_field_components: Tuple[int, ...] = (mp.Ez, ),
+                 dft_threshold: float = 1e-6,
+                 minimum_run_time: float = 0,
+                 maximum_run_time: float = onp.inf,
+                 until_after_sources: bool = True):
         self.simulation = simulation
         self.sources = sources
         self.monitors = monitors
@@ -124,20 +122,20 @@ class MeepJaxWrapper:
     def __call__(self, designs: List[jnp.ndarray]) -> jnp.ndarray:
         """Performs a Meep simulation, taking a list of designs and returning mode overlaps.
 
-        Args:
-          designs: a list of design variables as 1D, 2D, or 3D JAX arrays. Valid shapes for
-          design variables are (Nx, Ny, Nz) where Nx{y,z} match the elements of the
-          `grid_size` constructor argument of Meep's `MaterialGrid` used for the
-          corresponding design region. Singleton dimensions of the `grid_size` may be
-          omitted from the corresponding design variable. For example, a design variable
-          with a shape of either (10, 20) or (10, 20, 1) would be compatible with a
-          `grid_size` of (10, 20, 1). Similarly, a design variable with shapes of (25,),
-          (25, 1), or (25, 1, 1) would be compatible with a `grid_size` of (25, 1, 1).
+    Args:
+      designs: a list of design variables as 1D, 2D, or 3D JAX arrays. Valid shapes for
+      design variables are (Nx, Ny, Nz) where Nx{y,z} match the elements of the
+      `grid_size` constructor argument of Meep's `MaterialGrid` used for the
+      corresponding design region. Singleton dimensions of the `grid_size` may be
+      omitted from the corresponding design variable. For example, a design variable
+      with a shape of either (10, 20) or (10, 20, 1) would be compatible with a
+      `grid_size` of (10, 20, 1). Similarly, a design variable with shapes of (25,),
+      (25, 1), or (25, 1, 1) would be compatible with a `grid_size` of (25, 1, 1).
 
-        Returns:
-          a complex-valued JAX ndarray of differentiable mode monitor overlaps values with
-          a shape of (num monitors, num frequencies).
-        """
+    Returns:
+      a complex-valued JAX ndarray of differentiable mode monitor overlaps values with
+      a shape of (num monitors, num frequencies).
+    """
         return self._simulate_fn(designs)
 
     def _reset_convergence_measurement(self,
@@ -202,19 +200,15 @@ class MeepJaxWrapper:
         self._reset_convergence_measurement(design_region_monitors)
         self.simulation.run(**sim_run_args)
 
-        return utils.gather_design_region_fields(
-            self.simulation,
-            design_region_monitors,
-            self.frequencies,
-        )
+        return utils.gather_design_region_fields(self.simulation,
+                                                 design_region_monitors,
+                                                 self.frequencies)
 
-    def _calculate_vjps(
-        self,
-        fwd_fields,
-        adj_fields,
-        design_variable_shapes,
-        sum_freq_partials=True,
-    ):
+    def _calculate_vjps(self,
+                        fwd_fields,
+                        adj_fields,
+                        design_variable_shapes,
+                        sum_freq_partials=True):
         """Calculates the VJP for a given set of forward and adjoint fields."""
         return utils.calculate_vjps(
             self.simulation,
@@ -298,19 +292,19 @@ class MeepJaxWrapper:
     def _simulation_run_callback(self, sim: mp.Simulation) -> bool:
         """A callback function returning `True` when the simulation should stop.
 
-        This is a step function that gets called at each time step of the Meep
-        simulation, taking a Meep simulation object as an input and returning `True`
-        when the simulation should be terminated and returning `False` when the
-        simulation should continue. The resulting step function is designed to be
-        used with the `until` and `until_after_sources` arguments of the Meep
-        simulation `run()` routine.
+    This is a step function that gets called at each time step of the Meep
+    simulation, taking a Meep simulation object as an input and returning `True`
+    when the simulation should be terminated and returning `False` when the
+    simulation should continue. The resulting step function is designed to be
+    used with the `until` and `until_after_sources` arguments of the Meep
+    simulation `run()` routine.
 
-        Args:
-          sim: a Meep simulation object.
+    Args:
+      sim: a Meep simulation object.
 
-        Returns:
-          a boolean indicating whether the simulation should be terminated.
-        """
+    Returns:
+      a boolean indicating whether the simulation should be terminated.
+    """
         current_meep_time = sim.round_time()
         if current_meep_time <= self._last_measurement_meep_time + self.measurement_interval:
             return False

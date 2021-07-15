@@ -80,11 +80,11 @@ def gather_monitor_values(monitors: List[ObjectiveQuantity]) -> onp.ndarray:
     Args:
       monitors: the mode monitors.
 
-    Returns:
-      a rank-2 ndarray, where the dimensions are (monitor, frequency), of dtype
-      complex128.  Note that these values refer to the mode as oriented (i.e. they
-      are unidirectional).
-    """
+  Returns:
+    a rank-2 ndarray, where the dimensions are (monitor, frequency), of dtype
+    complex128.  Note that these values refer to the mode as oriented (i.e. they
+    are unidirectional).
+  """
     monitor_values = []
     for monitor in monitors:
         monitor_values.append(monitor())
@@ -101,21 +101,21 @@ def gather_design_region_fields(
 ) -> List[List[onp.ndarray]]:
     """Collects the design region DFT fields from the simulation.
 
-    Args:
-     simulation: the simulation object.
-     design_region_monitors: the installed design region monitors.
-     frequencies: the frequencies to monitor.
+  Args:
+   simulation: the simulation object.
+   design_region_monitors: the installed design region monitors.
+   frequencies: the frequencies to monitor.
 
-    Returns:
-      A list of lists.  Each entry (list) in the overall list corresponds one-to-
-      one with a declared design region.  For each such contained list, the
-      entries correspond to the field components that are monitored.  The entries
-      are ndarrays of rank 4 with dimensions (freq, x, y, (z-or-pad)).
+  Returns:
+    A list of lists.  Each entry (list) in the overall list corresponds one-to-
+    one with a declared design region.  For each such contained list, the
+    entries correspond to the field components that are monitored.  The entries
+    are ndarrays of rank 4 with dimensions (freq, x, y, (z-or-pad)).
 
-      The design region fields are sampled on the *Yee grid*.  This makes them
-      fairly awkward to inspect directly.  Their primary use case is supporting
-      gradient calculations.
-    """
+    The design region fields are sampled on the *Yee grid*.  This makes them
+    fairly awkward to inspect directly.  Their primary use case is supporting
+    gradient calculations.
+  """
     fwd_fields = []
     for monitor in design_region_monitors:
         fields_by_component = []
@@ -134,17 +134,17 @@ def validate_and_update_design(
         design_variables: Iterable[onp.ndarray]) -> None:
     """Validate the design regions and variables.
 
-    In particular the design variable should be 1,2,3-D and the design region
-    shape should match the design variable shape after dimension expansion.
-    The arguments are modified in place.
+  In particular the design variable should be 1,2,3-D and the design region
+  shape should match the design variable shape after dimension expansion.
+  The arguments are modified in place.
 
     Args:
       design_regions: List of mpa.DesignRegion,
       design_variables: Iterable with numpy arrays representing design variables.
 
-    Raises:
-      ValueError if the validation of dimensions fails.
-    """
+  Raises:
+    ValueError if the validation of dimensions fails.
+  """
     for i, (design_region,
             design_variable) in enumerate(zip(design_regions,
                                               design_variables)):

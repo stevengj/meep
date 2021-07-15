@@ -4,14 +4,12 @@ from meep import CustomSource
 
 
 class FilteredSource(CustomSource):
-    def __init__(
-        self,
-        center_frequency,
-        frequencies,
-        frequency_response,
-        dt,
-        time_src=None,
-    ):
+    def __init__(self,
+                 center_frequency,
+                 frequencies,
+                 frequency_response,
+                 dt,
+                 time_src=None):
         dt = dt / 2  # divide by two to compensate for staggered E,H time interval
         self.dt = dt
         self.frequencies = frequencies
