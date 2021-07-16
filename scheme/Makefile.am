@@ -39,7 +39,7 @@ endif
 
 # workaround missing namespace prefix in swig
 meep_renames.i: $(LIBHDRS)
-	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; perl -pe 's/^ *class +([A-Za-z_0-9:]*)( *| *:[^{]*){.*$$/%rename(meep_\1) meep::\1;/' $(LIBHDRS) | grep "%rename" | sed '/meep_fields_chunk/d ; /meep_comms_manager/d ; /meep_comms_key_hash_fn/d' | sort -u; echo; grep -hv typedef $(LIBHDRS) | perl -pe 's/(inline|const|extern|static) +//g' | perl -pe 's/^[A-Za-z_0-9:<>]+[* ]+([A-Za-z_0-9:]*) *\(.*$$/%rename(meep_\1) meep::\1;/' | grep "%rename" | sed '/choose_chunkdivision/d ; /meep_create_comms_manager/d' | sort -u; ) > $@
+	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; perl -pe 's/^ *class +([A-Za-z_0-9:]*)( *| *:[^{]*){.*$$/%rename(meep_\1) meep::\1;/' $(LIBHDRS) | grep "%rename" | sed '/meep_fields_chunk/d ; /meep_comms_manager/d ; /meep_comms_key_hash_fn/d ; /meep_timing_scope/d' | sort -u; echo; grep -hv typedef $(LIBHDRS) | perl -pe 's/(inline|const|extern|static) +//g' | perl -pe 's/^[A-Za-z_0-9:<>]+[* ]+([A-Za-z_0-9:]*) *\(.*$$/%rename(meep_\1) meep::\1;/' | grep "%rename" | sed '/choose_chunkdivision/d ; /meep_create_comms_manager/d' | sort -u; ) > $@
 
 # work around bug in swig, where it doesn't prepend namespace to friend funcs
 meep_swig_bug_workaround.i: $(LIBHDRS)

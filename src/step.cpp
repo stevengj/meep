@@ -62,28 +62,64 @@ void fields::step() {
     chunks[i]->s->update_condinv();
 
   calc_sources(time()); // for B sources
-  step_db(B_stuff);
+  {
+    auto step_timer = with_timing_scope(FieldUpdateB);
+    step_db(B_stuff);
+  }
   step_source(B_stuff);
-  step_boundaries(B_stuff);
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingB);
+    step_boundaries(B_stuff);
+  }
   calc_sources(time() + 0.5 * dt); // for integrated H sources
-  update_eh(H_stuff);
-  step_boundaries(WH_stuff);
+  {
+    auto step_timer = with_timing_scope(FieldUpdateH);
+    update_eh(H_stuff);
+  }
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingWH);
+    step_boundaries(WH_stuff);
+  }
   update_pols(H_stuff);
-  step_boundaries(PH_stuff);
-  step_boundaries(H_stuff);
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingPH);
+    step_boundaries(PH_stuff);
+  }
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingH);
+    step_boundaries(H_stuff);
+  }
 
   if (fluxes) fluxes->update_half();
 
   calc_sources(time() + 0.5 * dt); // for D sources
-  step_db(D_stuff);
+  {
+    auto step_timer = with_timing_scope(FieldUpdateD);
+    step_db(D_stuff);
+  }
   step_source(D_stuff);
-  step_boundaries(D_stuff);
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingD);
+    step_boundaries(D_stuff);
+  }
   calc_sources(time() + dt); // for integrated E sources
-  update_eh(E_stuff);
-  step_boundaries(WE_stuff);
+  {
+    auto step_timer = with_timing_scope(FieldUpdateE);
+    update_eh(E_stuff);
+  }
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingWE);
+    step_boundaries(WE_stuff);
+  }
   update_pols(E_stuff);
-  step_boundaries(PE_stuff);
-  step_boundaries(E_stuff);
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingPE);
+    step_boundaries(PE_stuff);
+  }
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingE);
+    step_boundaries(E_stuff);
+  }
 
   if (fluxes) fluxes->update();
   t += 1;

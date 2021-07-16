@@ -30,7 +30,8 @@ using namespace std;
 namespace meep {
 
 fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylorigin)
-    : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta) {
+    : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta),
+      working_on(&times_spent) {
   shared_chunks = s->shared_chunks;
   components_allocated = false;
   synchronized_magnetic_fields = 0;
@@ -82,7 +83,7 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
 }
 
 fields::fields(const fields &thef)
-    : S(thef.S), gv(thef.gv), user_volume(thef.user_volume), v(thef.v) {
+    : S(thef.S), gv(thef.gv), user_volume(thef.user_volume), v(thef.v), working_on(&times_spent) {
   shared_chunks = thef.shared_chunks;
   components_allocated = thef.components_allocated;
   synchronized_magnetic_fields = thef.synchronized_magnetic_fields;

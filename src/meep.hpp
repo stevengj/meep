@@ -21,6 +21,8 @@
 #include <limits>
 #include <memory>
 #include <unordered_map>
+#include <vector>
+
 #include <stdio.h>
 #include <stddef.h>
 #include <math.h>
@@ -28,8 +30,6 @@
 #include "meep/vec.hpp"
 #include "meep/mympi.hpp"
 #include "meep/meep-config.h"
-
-#include <vector>
 
 namespace meep {
 
@@ -1558,7 +1558,37 @@ enum time_sink {
   FourierTransforming,
   MPBTime,
   GetFarfieldsTime,
-  Other
+  Other,
+  FieldUpdateB,
+  FieldUpdateH,
+  FieldUpdateD,
+  FieldUpdateE,
+  BoundarySteppingB,
+  BoundarySteppingWH,
+  BoundarySteppingPH,
+  BoundarySteppingH,
+  BoundarySteppingD,
+  BoundarySteppingWE,
+  BoundarySteppingPE,
+  BoundarySteppingE
+};
+
+// RAII-based profiling timer that accumulates wall time from creation until it
+// is destroyed or the `exit` method is invoked. Not thread-safe.
+class timing_scope {
+public:
+  // Creates a `timing_scope` that persists timing information in `timers_` but does not take
+  // ownership of it.
+  explicit timing_scope(std::unordered_map<time_sink, double> *timers_, time_sink sink_ = Other);
+  ~timing_scope();
+  // Stops time accumulation for the timing_scope.
+  void exit();
+
+private:
+  std::unordered_map<time_sink, double> *timers;  // Not owned by us.
+  time_sink sink;
+  bool active;
+  double t_start;
 };
 
 typedef void (*field_chunkloop)(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec ie,
@@ -1671,7 +1701,7 @@ public:
   void reset();
 
   // time.cpp
-  std::vector<double> time_spent_on(time_sink);
+  std::vector<double> time_spent_on(time_sink sink);
   double mean_time_spent_on(time_sink);
   void print_times();
   // boundaries.cpp
@@ -2102,9 +2132,9 @@ public:
 private:
   int synchronized_magnetic_fields; // count number of nested synchs
   double last_wall_time;
-#define MEEP_TIMING_STACK_SZ 10
-  time_sink working_on, was_working_on[MEEP_TIMING_STACK_SZ];
-  double times_spent[Other + 1];
+  std::vector<time_sink> was_working_on;
+  std::unordered_map<time_sink, double> times_spent;
+  timing_scope working_on;
   // fields.cpp
   void figure_out_step_plan();
   // boundaries.cpp
@@ -2139,11 +2169,18 @@ public:
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
   // time.cpp
-  void am_now_working_on(time_sink);
+  void am_now_working_on(time_sink sink);
   void finished_working();
-  void reset_timers();
+
+  double get_time_spent_on(time_sink sink) const;
+  // Returns a map from time_sink to the vector of total times each MPI process spent on the
+  // indicated category.
+  std::unordered_map<time_sink, std::vector<double> > get_timing_data() const;
 
  private:
+  void reset_timers();
+  timing_scope with_timing_scope(time_sink sink);
+
   // The following is an array that is num_chunks by num_chunks.  Actually
   // it is two arrays, one for the imaginary and one for the real part.
   realnum **comm_blocks[NUM_FIELD_TYPES];
