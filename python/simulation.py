@@ -3678,10 +3678,29 @@ class Simulation(object):
     def mean_time_spent_on(self, time_sink):
         """
         Return the mean time spent by all processes for a type of work `time_sink` which
-        can be one of ten integer values `0`-`9`: (`0`) connecting chunks, (`1`) time stepping,
-        (`2`) copying boundaries, (`3`) MPI all-to-all communication/synchronization,
-        (`4`) MPI one-to-one communication, (`5`) field output, (`6`) Fourier transforming,
-        (`7`) MPB mode solver, (`8`) near-to-far field transformation, and (`9`) other.
+        can be one of the following integer constants:
+        * meep.Stepping ("time stepping")
+        * meep.Connecting ("connecting chunks")
+        * meep.Boundaries ("copying boundaries")
+        * meep.MpiAllTime ("all-all communication")
+        * meep.MpiOneTime ("1-1 communication")
+        * meep.FieldOutput ("outputting fields")
+        * meep.FourierTransforming ("Fourier transforming")
+        * meep.MPBTime ("MPB mode solver")
+        * meep.GetFarfieldsTime ("far-field transform")
+        * meep.FieldUpdateB ("updating B field")
+        * meep.FieldUpdateH ("updating H field")
+        * meep.FieldUpdateD ("updating D field")
+        * meep.FieldUpdateE ("updating E field")
+        * meep.BoundarySteppingB ("boundary stepping B")
+        * meep.BoundarySteppingWH ("boundary stepping WH")
+        * meep.BoundarySteppingPH ("boundary stepping PH")
+        * meep.BoundarySteppingH ("boundary stepping H")
+        * meep.BoundarySteppingD ("boundary stepping D")
+        * meep.BoundarySteppingWE ("boundary stepping WE")
+        * meep.BoundarySteppingPE ("boundary stepping PE")
+        * meep.BoundarySteppingE ("boundary stepping E")
+        * meep.Other ("everything else")
         """
         return self.fields.mean_time_spent_on(time_sink)
 
@@ -3694,6 +3713,15 @@ class Simulation(object):
         (`7`) MPB mode solver, (`8`) near-to-far field transformation, and (`9`) other.
         """
         return self.fields.time_spent_on(time_sink)
+
+    def get_timing_data(self):
+        """
+        Returns a dictionary that maps each `time_sink` to a list with one entry
+        per process. The entries in the list correspond to the total amount of
+        time in seconds spent on a particular type of operation. The set of
+        valid time sinks is the same as for `mean_time_spent_on`.
+        """
+        return self.fields.get_timing_data()
 
     def output_times(self, fname):
         """

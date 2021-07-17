@@ -13,6 +13,9 @@ except NameError:
     unicode = str
 
 
+TIMESINKS_FOR_TEST = (mp.BoundarySteppingE, mp.MPBTime, mp.Connecting)
+
+
 class TestSimulation(unittest.TestCase):
 
     fname_base = re.sub(r'\.py$', '', os.path.split(sys.argv[0])[1])
@@ -578,6 +581,34 @@ class TestSimulation(unittest.TestCase):
         sim.run(mp.at_end(print_field), until=50)
 
         self.assertAlmostEqual(result[0], -0.0599602798684155)
+
+    def test_timing_data(self):
+        resolution = 20
+        cell_size = mp.Vector3(10, 10)
+        pml = [mp.PML(1)]
+        center = mp.Vector3(2, -1)
+        result = []
+        fcen = 0.15
+        df = 0.1
+
+        sources = [mp.Source(src=mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
+                             center=mp.Vector3())]
+        geometry = [mp.Block(center=mp.Vector3(), size=mp.Vector3(mp.inf, 3, mp.inf),
+                             material=mp.Medium(epsilon=12))]
+
+        sim = mp.Simulation(resolution=resolution, cell_size=cell_size, boundary_layers=pml,
+                            sources=sources, geometry=geometry, geometry_center=center)
+        sim.run(until=50)
+        timing_data = sim.get_timing_data()
+
+        for sink in TIMESINKS_FOR_TEST:
+            self.assertIn(sink, timing_data.keys())
+            if mp.with_mpi():
+                self.assertEqual(len(timing_data[sink]), mp.count_processors())
+            else:
+                self.assertEqual(len(timing_data[sink]), 1)
+
+            np.testing.assert_array_equal(sim.time_spent_on(sink), timing_data[sink])
 
     def test_source_slice(self):
         sim = self.init_simple_simulation()
