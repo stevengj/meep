@@ -1429,6 +1429,10 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
   $1 = temp.get();
 }
 
+%typemap(out) const meep::binary_partition * {
+  $result = bp_to_py_bp($1);
+}
+
 %typemap(arginit) meep::binary_partition * {
     $1 = NULL;
 }

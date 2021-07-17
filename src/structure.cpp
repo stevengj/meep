@@ -15,6 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <iostream>
 #include <memory>
 #include <stdio.h>
 #include <stdlib.h>
@@ -960,6 +961,7 @@ double structure_chunk::max_eps() const {
 }
 
 bool structure::equal_layout(const structure &s) const {
+  std::cout << "equal_layout num_chunks " << num_chunks << " s.num_chunks " << s.num_chunks << "\n";
   if (a != s.a || num_chunks != s.num_chunks || v != s.v || S != s.S) return false;
   for (int i = 0; i < num_chunks; ++i)
     if (chunks[i]->a != s.chunks[i]->a || chunks[i]->v != s.chunks[i]->v) return false;

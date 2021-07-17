@@ -1210,6 +1210,7 @@ class Simulation(object):
         self.default_material = default_material
         self.epsilon_input_file = epsilon_input_file
         self.num_chunks = chunk_layout.numchunks() if isinstance(chunk_layout,mp.BinaryPartition) else num_chunks
+        self._num_chunks_original = self.num_chunks
         self.Courant = Courant
         self.global_d_conductivity = 0
         self.global_b_conductivity = 0
@@ -1238,6 +1239,7 @@ class Simulation(object):
         self.force_all_components = force_all_components
         self.split_chunks_evenly = split_chunks_evenly
         self.chunk_layout = chunk_layout
+        self._chunk_layout_original = self.chunk_layout
         self.collect_stats = collect_stats
         self.fragment_stats = None
         self._output_stats = os.environ.get('MEEP_STATS', None)
@@ -1705,6 +1707,12 @@ class Simulation(object):
         if self.chunk_layout and not isinstance(self.chunk_layout,mp.BinaryPartition):
             self.load_chunk_layout(br, self.chunk_layout)
             self.set_materials()
+
+        # Update sim.chunk_layout if it is generated internally from Meep
+        if self.chunk_layout is None:
+            self.chunk_layout = self.structure.get_binary_partition()
+            # We need self.num_chunks to be consistent
+            self.num_chunks = self.chunk_layout.numchunks()
 
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
@@ -3596,11 +3604,15 @@ class Simulation(object):
     def reset_meep(self):
         """
         Reset all of Meep's parameters, deleting the fields, structures, etcetera, from
-        memory as if you had not run any computations.
+        memory as if you had not run any computations. If the num_chunks or chunk_layout
+        attributes have been modified internally, they are reset to their original
+        values passed in at instantiation.
         """
         self.fields = None
         self.structure = None
         self.dft_objects = []
+        self.num_chunks = self._num_chunks_original
+        self.chunk_layout = self._chunk_layout_original
         self._is_initialized = False
 
     def restart_fields(self):

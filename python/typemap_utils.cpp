@@ -1086,3 +1086,31 @@ static PyObject *py_binary_partition_object() {
   }
   return bp_type;
 }
+
+// Converts a meep::binary_partition object into a Python class instance
+static PyObject *bp_to_py_bp(const meep::binary_partition *bp) {
+  PyObject *bp_class = py_binary_partition_object();
+  PyObject *args = PyTuple_New(0);  // no numbered arguments to pass
+  if (bp->is_leaf()) {
+    // leaf nodes will have proc_id and no other properties
+    int proc_id = bp->get_proc_id();
+    PyObject *kwargs = Py_BuildValue("{s:i}", "proc_id", proc_id);
+    PyObject *py_bp = PyObject_Call(bp_class, args, kwargs);
+    Py_DECREF(args);
+    Py_DECREF(kwargs);
+    return py_bp;
+  } else {
+    // other nodes will have left, right, split_dir, split_pos
+    PyObject *left = bp_to_py_bp(bp->left_tree());
+    PyObject *right = bp_to_py_bp(bp->right_tree());
+    meep::direction split_dir = bp->get_plane().dir;
+    double split_pos = bp->get_plane().pos;
+    PyObject *kwargs =
+        Py_BuildValue("{s:O,s:O,s:i,s:d}", "left", left, "right", right,
+                      "split_dir", split_dir, "split_pos", split_pos);
+    PyObject *py_bp = PyObject_Call(bp_class, args, kwargs);
+    Py_DECREF(args);
+    Py_DECREF(kwargs);
+    return py_bp;
+  }
+}
