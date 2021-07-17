@@ -336,6 +336,9 @@ class TestSimulation(unittest.TestCase):
         if chunk_sim:
             chunk_layout = sim1
 
+        fields_dump_fn = os.path.join(self.temp_dir, 'test_load_dump_fields.h5')
+        sim1.dump_fields(fields_dump_fn)
+
         sim = mp.Simulation(resolution=resolution,
                             cell_size=cell,
                             boundary_layers=pml_layers,

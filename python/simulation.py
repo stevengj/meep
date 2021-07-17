@@ -1888,6 +1888,23 @@ class Simulation(object):
             ## source is either filename (string)
             self.structure.load_chunk_layout(source, br)
 
+    def dump_fields(self, fname):
+        """
+        Dumps the fields to the file `fname`.
+        """
+        if self.fields is None:
+            raise ValueError("Fields must be initialized before calling dump_fields")
+        self.fields.dump(fname)
+
+    def load_fields(self, fname):
+        """
+        Loads fields from the file `fname`. A file name to load can also be passed to
+        the `Simulation` constructor via the `load_fields` keyword argument.
+        """
+        if self.fields is None:
+            raise ValueError("Fields must be initialized before calling load_fields")
+        self.fields.load(fname)
+
     def init_sim(self):
         if self._is_initialized:
             return
@@ -2445,9 +2462,6 @@ class Simulation(object):
         """
         if self.fields is None:
             self.init_sim()
-
-        if not self.dft_objects:
-            raise RuntimeError('DFT monitor dft_fields must be initialized before calling output_dft')
 
         if hasattr(dft_fields, 'swigobj'):
             dft_fields_swigobj = dft_fields.swigobj
@@ -3231,9 +3245,6 @@ class Simulation(object):
           where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
           `nfreq` parameter to `add_dft_fields`, `add_flux`, etc.
         """
-        if not self.dft_objects:
-            raise RuntimeError('DFT monitor dft_obj must be initialized before calling get_dft_array')
-
         if hasattr(dft_obj, 'swigobj'):
             dft_swigobj = dft_obj.swigobj
         else:
@@ -5224,7 +5235,7 @@ class BinaryPartition(object):
             self.right = right
         else:
             self.proc_id = proc_id
-    
+
     def print(self):
         """Pretty-prints the tree structure of the BinaryPartition object."""
         print(str(self) + " with {} chunks:".format(self.numchunks()))
